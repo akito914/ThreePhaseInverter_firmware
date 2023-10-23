@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <math.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,6 +61,39 @@ static void MX_TIM8_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+float omega = 377;
+float phase = 0.0f;
+float amp_u = 0;
+float amp_v = 0;
+float amp_w = 0;
+
+
+void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
+{
+
+	if(htim->Instance == TIM8 && __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim8))
+	{
+
+		phase += omega * 100E-6;
+		if(phase > M_PI)
+		{
+			phase -= 2*M_PI;
+		}
+
+		amp_u = 0.9 * cosf(phase);
+		amp_v = 0.9 * cosf(phase - M_PI*2/3.0f);
+		amp_w = 0.9 * cosf(phase + M_PI*2/3.0f);
+
+		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + amp_u));
+		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + amp_v));
+		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 + amp_w));
+
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	}
+
+}
+
 
 /* USER CODE END 0 */
 
@@ -104,9 +139,14 @@ int main(void)
 	HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
 
 
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + 0.9));
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + 0.3));
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 - 0.3));
+	__HAL_TIM_CLEAR_FLAG(&htim8, TIM_FLAG_UPDATE);
+	__HAL_TIM_ENABLE_IT(&htim8, TIM_IT_UPDATE);
+
+	HAL_TIM_GenerateEvent(&htim8, TIM_EVENTSOURCE_UPDATE);
+
+	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + 0));
+	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + 0));
+	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 - 0));
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_4, htim8.Init.Period / 2 * (1 - 0.9));
 
 	HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_1);
