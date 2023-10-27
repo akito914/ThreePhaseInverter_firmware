@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <stdio.h>
 #include <math.h>
 
 /* USER CODE END Includes */
@@ -47,6 +48,19 @@ TIM_HandleTypeDef htim8;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+
+
+#ifdef __GNUC__
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
+void __io_putchar(uint8_t ch)
+{
+	HAL_UART_Transmit(&huart2, &ch, 1, 1);
+}
+
+
 
 /* USER CODE END PV */
 
@@ -130,6 +144,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
+  	printf("Hello World\n");
+
+
+  	HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
+
+
+
+
 	HAL_Delay(1000);
 
 	HAL_GPIO_WritePin(MC_GPIO_Port, MC_Pin, GPIO_PIN_SET);
@@ -166,6 +188,33 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	  HAL_Delay(100);
+
+	  uint32_t GB;
+	  uint16_t D, DH, DL;
+	  GB = GPIOB->IDR;
+	  DL = (GB >> 2) & 0x000001FF;
+	  DH = (GB >> 12) & 0x00000007;
+	  D = (DH << 9) | DL;
+
+	  for(int i = 0; i < 12; i++)
+	  {
+		  int b = (D >> (12-1-i)) & 0x1;
+		  printf("%d", b);
+		  if(((i+1) & 0x3) == 0)
+		  {
+			  printf(" ");
+		  }
+	  }
+
+	  printf("  EOLC=%d, EOC=%d", HAL_GPIO_ReadPin(nEOLC_GPIO_Port, nEOLC_Pin), HAL_GPIO_ReadPin(nEOC_GPIO_Port, nEOC_Pin));
+
+
+
+	  printf("\n");
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -398,13 +447,13 @@ static void MX_GPIO_Init(void)
                           |D3_Pin|D4_Pin|D5_Pin|D6_Pin
                           |D7_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : nEOLC_Pin */
   GPIO_InitStruct.Pin = nEOLC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(nEOLC_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
