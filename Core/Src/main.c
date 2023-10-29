@@ -147,10 +147,6 @@ int main(void)
   	printf("Hello World\n");
 
 
-  	HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
-
-
-
 
 	HAL_Delay(1000);
 
@@ -182,6 +178,49 @@ int main(void)
 
 
 
+	// ADC Setting
+
+	// Initialize
+  	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_SET);
+  	HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
+  	HAL_GPIO_WritePin(nWR_GPIO_Port, nWR_Pin, GPIO_PIN_SET);
+  	HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_SET);
+
+  	// Write mode
+  	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
+  	HAL_GPIO_WritePin(nWR_GPIO_Port, nWR_Pin, GPIO_PIN_RESET);
+
+  	// Set GPIO as output port
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = D0_Pin|D1_Pin|D2_Pin|D3_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	// channel activation
+  	HAL_GPIO_WritePin(D0_GPIO_Port, D0_Pin, GPIO_PIN_SET);
+  	HAL_GPIO_WritePin(D1_GPIO_Port, D1_Pin, GPIO_PIN_SET);
+  	HAL_GPIO_WritePin(D2_GPIO_Port, D2_Pin, GPIO_PIN_SET);
+  	HAL_GPIO_WritePin(D3_GPIO_Port, D3_Pin, GPIO_PIN_SET);
+
+  	// Write
+  	HAL_GPIO_WritePin(nWR_GPIO_Port, nWR_Pin, GPIO_PIN_SET);
+  	HAL_Delay(1);
+  	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_SET);
+
+  	// Set GPIO as input port
+	GPIO_InitStruct.Pin = D0_Pin|D8_Pin|D9_Pin|D10_Pin
+						  |D11_Pin|nEOC_Pin|D1_Pin|D2_Pin
+						  |D3_Pin|D4_Pin|D5_Pin|D6_Pin
+						  |D7_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -191,26 +230,52 @@ int main(void)
 
 	  HAL_Delay(100);
 
-	  uint32_t GB;
-	  uint16_t D, DH, DL;
-	  GB = GPIOB->IDR;
-	  DL = (GB >> 2) & 0x000001FF;
-	  DH = (GB >> 12) & 0x00000007;
-	  D = (DH << 9) | DL;
 
-	  for(int i = 0; i < 12; i++)
+	  HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_RESET);
+	  HAL_Delay(1);
+	  HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_SET);
+
+	  while(HAL_GPIO_ReadPin(nEOLC_GPIO_Port, nEOLC_Pin) == GPIO_PIN_SET){}
+
+	  HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
+
+	  uint16_t ad_arr[4];
+
+	  for(int ch = 0; ch < 4; ch++)
 	  {
-		  int b = (D >> (12-1-i)) & 0x1;
-		  printf("%d", b);
-		  if(((i+1) & 0x3) == 0)
-		  {
-			  printf(" ");
-		  }
+		  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_RESET);
+		  HAL_Delay(1);
+
+		  uint32_t GB;
+		  uint16_t D, DH, DL;
+		  GB = GPIOB->IDR;
+		  DL = (GB >> 2) & 0x000001FF;
+		  DH = (GB >> 12) & 0x00000007;
+		  D = (DH << 9) | DL;
+		  ad_arr[ch] = D;
+
+		  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
+
+		  HAL_Delay(1);
 	  }
 
-	  printf("  EOLC=%d, EOC=%d", HAL_GPIO_ReadPin(nEOLC_GPIO_Port, nEOLC_Pin), HAL_GPIO_ReadPin(nEOC_GPIO_Port, nEOC_Pin));
+	  HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
 
 
+	  for(int ch = 0; ch < 4; ch++)
+	  {
+		  printf("%5f  ", ad_arr[ch] / 4096.0f);
+	  }
+
+//	  for(int i = 0; i < 12; i++)
+//	  {
+//		  int b = (ad_arr[0] >> (12-1-i)) & 0x1;
+//		  printf("%d", b);
+//		  if(((i+1) & 0x3) == 0)
+//		  {
+//			  printf(" ");
+//		  }
+//	  }
 
 	  printf("\n");
 
