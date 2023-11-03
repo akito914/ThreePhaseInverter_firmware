@@ -231,6 +231,9 @@ int main(void)
 	  HAL_Delay(100);
 
 
+	  printf("temperature flag = %d\n", HAL_GPIO_ReadPin(TH_GPIO_Port, TH_Pin));
+
+
 	  HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_RESET);
 	  HAL_Delay(1);
 	  HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_SET);
