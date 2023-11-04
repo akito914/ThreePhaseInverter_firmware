@@ -43,6 +43,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim8;
 
 UART_HandleTypeDef huart2;
@@ -69,6 +70,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM8_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -76,18 +78,53 @@ static void MX_TIM8_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+uint16_t ad_arr[4];
+
+void get_adc()
+{
+
+	while(HAL_GPIO_ReadPin(nEOLC_GPIO_Port, nEOLC_Pin) == GPIO_PIN_SET){}
+
+	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
+
+
+	for(int ch = 0; ch < 4; ch++)
+	{
+	  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_RESET);
+
+
+	  uint32_t GB;
+	  uint16_t D, DH, DL;
+	  GB = GPIOB->IDR;
+	  DL = (GB >> 2) & 0x000001FF;
+	  DH = (GB >> 12) & 0x00000007;
+	  D = (DH << 9) | DL;
+	  ad_arr[ch] = D;
+
+	  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
+
+	}
+
+	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
+
+}
+
+
+
+
 float omega = 377;
 float phase = 0.0f;
 float amp_u = 0;
 float amp_v = 0;
 float amp_w = 0;
 
-
 void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 {
 
 	if(htim->Instance == TIM8 && __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim8))
 	{
+
+		get_adc();
 
 		phase += omega * 100E-6;
 		if(phase > M_PI)
@@ -98,6 +135,11 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 		amp_u = 0.9 * cosf(phase);
 		amp_v = 0.9 * cosf(phase - M_PI*2/3.0f);
 		amp_w = 0.9 * cosf(phase + M_PI*2/3.0f);
+
+
+		amp_u = 0.95;
+		amp_v = 0.5;
+		amp_w = 0;
 
 		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + amp_u));
 		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + amp_v));
@@ -141,6 +183,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_TIM8_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -148,13 +191,17 @@ int main(void)
 
 
 
-	HAL_Delay(1000);
+//	HAL_Delay(1000);
+//
+//	HAL_GPIO_WritePin(MC_GPIO_Port, MC_Pin, GPIO_PIN_SET);
+//
+//	HAL_Delay(1000);
+//
+//	HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
 
-	HAL_GPIO_WritePin(MC_GPIO_Port, MC_Pin, GPIO_PIN_SET);
 
-	HAL_Delay(1000);
 
-	HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
+	HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_1);
 
 
 	__HAL_TIM_CLEAR_FLAG(&htim8, TIM_FLAG_UPDATE);
@@ -231,38 +278,38 @@ int main(void)
 	  HAL_Delay(100);
 
 
-	  printf("temperature flag = %d\n", HAL_GPIO_ReadPin(TH_GPIO_Port, TH_Pin));
+//	  printf("temperature flag = %d\n", HAL_GPIO_ReadPin(TH_GPIO_Port, TH_Pin));
 
 
-	  HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_RESET);
-	  HAL_Delay(1);
-	  HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_SET);
-
-	  while(HAL_GPIO_ReadPin(nEOLC_GPIO_Port, nEOLC_Pin) == GPIO_PIN_SET){}
-
-	  HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
-
-	  uint16_t ad_arr[4];
-
-	  for(int ch = 0; ch < 4; ch++)
-	  {
-		  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_RESET);
-		  HAL_Delay(1);
-
-		  uint32_t GB;
-		  uint16_t D, DH, DL;
-		  GB = GPIOB->IDR;
-		  DL = (GB >> 2) & 0x000001FF;
-		  DH = (GB >> 12) & 0x00000007;
-		  D = (DH << 9) | DL;
-		  ad_arr[ch] = D;
-
-		  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
-
-		  HAL_Delay(1);
-	  }
-
-	  HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
+//	  HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_RESET);
+//	  HAL_Delay(1);
+//	  HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_SET);
+//
+//	  while(HAL_GPIO_ReadPin(nEOLC_GPIO_Port, nEOLC_Pin) == GPIO_PIN_SET){}
+//
+//	  HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
+//
+//	  uint16_t ad_arr[4];
+//
+//	  for(int ch = 0; ch < 4; ch++)
+//	  {
+//		  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_RESET);
+//		  HAL_Delay(1);
+//
+//		  uint32_t GB;
+//		  uint16_t D, DH, DL;
+//		  GB = GPIOB->IDR;
+//		  DL = (GB >> 2) & 0x000001FF;
+//		  DH = (GB >> 12) & 0x00000007;
+//		  D = (DH << 9) | DL;
+//		  ad_arr[ch] = D;
+//
+//		  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
+//
+//		  HAL_Delay(1);
+//	  }
+//
+//	  HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
 
 
 	  for(int ch = 0; ch < 4; ch++)
@@ -345,6 +392,72 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 60000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+  sSlaveConfig.InputTrigger = TIM_TS_ITR1;
+  if (HAL_TIM_SlaveConfigSynchro(&htim2, &sSlaveConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM2;
+  sConfigOC.Pulse = 87;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
   * @brief TIM8 Initialization Function
   * @param None
   * @retval None
@@ -356,6 +469,7 @@ static void MX_TIM8_Init(void)
 
   /* USER CODE END TIM8_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
@@ -370,11 +484,20 @@ static void MX_TIM8_Init(void)
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim8.Init.RepetitionCounter = 0;
   htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim8, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim8) != HAL_OK)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
   {
