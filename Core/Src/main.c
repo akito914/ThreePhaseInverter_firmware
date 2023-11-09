@@ -25,6 +25,9 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "ntshell.h"
+#include "usrcmd.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,6 +66,8 @@ void __io_putchar(uint8_t ch)
 
 
 
+ntshell_t nts;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -78,9 +83,9 @@ static void MX_TIM2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint16_t ad_arr[4];
 
-void get_adc()
+
+void get_adc(uint16_t* ad_arr)
 {
 
 	while(HAL_GPIO_ReadPin(nEOLC_GPIO_Port, nEOLC_Pin) == GPIO_PIN_SET){}
@@ -123,8 +128,11 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 
 	if(htim->Instance == TIM8 && __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim8))
 	{
+		uint16_t ad_arr[4];
 
-		get_adc();
+		get_adc(ad_arr);
+
+
 
 		phase += omega * 100E-6;
 		if(phase > M_PI)
@@ -189,6 +197,10 @@ int main(void)
 
   	printf("Hello World\n");
 
+
+  	ntshell_usr_init(&nts);
+
+	ntshell_execute(&nts);
 
 
 //	HAL_Delay(1000);
@@ -312,10 +324,10 @@ int main(void)
 //	  HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
 
 
-	  for(int ch = 0; ch < 4; ch++)
-	  {
-		  printf("%5f  ", ad_arr[ch] / 4096.0f);
-	  }
+//	  for(int ch = 0; ch < 4; ch++)
+//	  {
+//		  printf("%5f  ", ad_arr[ch] / 4096.0f);
+//	  }
 
 //	  for(int i = 0; i < 12; i++)
 //	  {
