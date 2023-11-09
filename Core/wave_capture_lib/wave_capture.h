@@ -39,6 +39,10 @@ typedef struct
 {
 	WaveCapture_Init_t init;
 	uint32_t ch_select;
+	float trig_level_f;
+	int trig_lebel_i;
+	uint32_t trig_ch;
+	int32_t trig_pos;
 	void** wavedata;
 }WaveCapture_t;
 
@@ -53,7 +57,7 @@ void WaveCapture_Polling(WaveCapture_t *h);
 
 int WaveCapture_Set_Channel(WaveCapture_t *h, uint32_t channel_select);
 
-int WaveCapture_Set_TriggerLevel(WaveCapture_t *h, float trig_level);
+int WaveCapture_Set_TriggerLevel(WaveCapture_t *h, float trig_level_f, int trig_level_i);
 
 int WaveCapture_Set_TriggerChannel(WaveCapture_t *h, uint32_t trig_channel);
 
