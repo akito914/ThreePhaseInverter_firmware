@@ -37,10 +37,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "main.h"
 
+#include "wave_capture.h"
+
 extern UART_HandleTypeDef huart2;
+
+extern WaveCapture_t wavecap;
+
 
 #define UartHandler (huart2)
 
@@ -245,7 +251,16 @@ static int usrcmd_wave(int argc, char **argv)
 		}
 		if(ntlibc_strcmp(argv[2], "channel") == 0)
 		{
-			WaveCapture_Set_Channel();
+			char *endptr;
+			uint32_t ch_config = strtoul(argv[3], &endptr, 16);
+			uint32_t len = strlen(argv[3]);
+			if(len > 8 || argv[3] + len != endptr)
+			{
+				uart_puts("[channel] must be [00000000 - FFFFFFFF].\r\n");
+				return -1;
+			}
+			uart_puts("Succeed to convert string.\r\n");
+			WaveCapture_Set_Channel(&wavecap, ch_config);
 		}
 
 		return 0;

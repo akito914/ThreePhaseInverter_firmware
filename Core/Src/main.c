@@ -24,9 +24,12 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <malloc.h>
 
 #include "ntshell.h"
 #include "usrcmd.h"
+
+#include "wave_capture.h"
 
 /* USER CODE END Includes */
 
@@ -54,6 +57,24 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 
 
+
+
+ntshell_t nts;
+
+WaveCapture_t wavecap;
+
+
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
+static void MX_TIM8_Init(void);
+static void MX_TIM2_Init(void);
+/* USER CODE BEGIN PFP */
+
 #ifdef __GNUC__
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #else
@@ -65,18 +86,18 @@ void __io_putchar(uint8_t ch)
 }
 
 
+int wave_tx_func(const uint8_t *buf, int length)
+{
+	HAL_StatusTypeDef status;
+	status = HAL_UART_Transmit(&huart2, &buf, (uint16_t)length, 1000);
+	if(status != HAL_OK)
+	{
+		return 0;
+	}
+	return length;
+}
 
-ntshell_t nts;
 
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_USART2_UART_Init(void);
-static void MX_TIM8_Init(void);
-static void MX_TIM2_Init(void);
-/* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
@@ -196,6 +217,31 @@ int main(void)
 
 
   	printf("Hello World\n");
+
+  	WaveCapture_Type_e wavecap_type[] = {
+  			WAVECAPTURE_TYPE_FLOAT,
+  			WAVECAPTURE_TYPE_FLOAT,
+			WAVECAPTURE_TYPE_INT32,
+			WAVECAPTURE_TYPE_INT32,
+  	};
+  	WaveCapture_Init_t wave_init;
+  	wave_init.channel_num = 4;
+  	wave_init.func_write = wave_tx_func;
+  	wave_init.sampling_length = 256;
+  	wave_init.type_array = wavecap_type;
+  	int rtn = WaveCapture_Init(&wavecap, &wave_init);
+  	printf("return = %d\n", rtn);
+  	printf("type[0] = %d\n", wavecap.init.type_array[0]);
+  	printf("type[1] = %d\n", wavecap.init.type_array[1]);
+  	printf("type[2] = %d\n", wavecap.init.type_array[2]);
+  	printf("type[3] = %d\n", wavecap.init.type_array[3]);
+  	printf("sizeof(WaveCapture_Type_e) = %d\n", sizeof(WaveCapture_Type_e));
+  	printf("sizeof(void*) = %d\n", sizeof(void*));
+  	printf("type_array size = %d\n", malloc_usable_size(wavecap.init.type_array));
+  	printf("wavedata size = %d\n", malloc_usable_size(wavecap.wavedata));
+  	printf("wavedata[0] size = %d\n", malloc_usable_size(wavecap.wavedata[0]));
+  	printf("wavedata_length = %d\n", wavecap.init.sampling_length);
+
 
 
   	ntshell_usr_init(&nts);

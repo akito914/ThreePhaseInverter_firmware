@@ -29,7 +29,6 @@ typedef enum
 
 typedef struct
 {
-	WaveCapture_SerialRead_f func_read;
 	WaveCapture_SerialWrite_f func_write;
 	uint32_t sampling_length;
 	uint32_t channel_num;
@@ -38,11 +37,13 @@ typedef struct
 
 typedef struct
 {
-
+	WaveCapture_Init_t init;
+	uint32_t ch_select;
+	void** wavedata;
 }WaveCapture_t;
 
 
-void WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init);
+int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init);
 
 
 void WaveCapture_Sampling(WaveCapture_t *h);
@@ -50,7 +51,7 @@ void WaveCapture_Sampling(WaveCapture_t *h);
 
 void WaveCapture_Polling(WaveCapture_t *h);
 
-int WaveCapture_Set_Channel(WaveCapture_t *h, uint32_t channel_enable);
+int WaveCapture_Set_Channel(WaveCapture_t *h, uint32_t channel_select);
 
 int WaveCapture_Set_TriggerLevel(WaveCapture_t *h, float trig_level);
 
@@ -65,6 +66,10 @@ int WaveCapture_Set_TriggerMode(WaveCapture_t *h, WaveCapture_Mode_e mode);
 int WaveCapture_Set_Decimate(WaveCapture_t *h, uint32_t decimate);
 
 int WaveCapture_Get_WaveForm(WaveCapture_t *h, uint8_t *buf, uint32_t *length);
+
+
+void WaveCapture_Dispose(WaveCapture_t *h);
+
 
 
 #endif /* _WAVE_CAPTURE_H_ */
