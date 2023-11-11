@@ -56,13 +56,12 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
-
-
-
 ntshell_t nts;
 
 WaveCapture_t wavecap;
 
+
+float wave_data[4] = {0};
 
 
 /* USER CODE END PV */
@@ -165,7 +164,6 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 		amp_v = 0.9 * cosf(phase - M_PI*2/3.0f);
 		amp_w = 0.9 * cosf(phase + M_PI*2/3.0f);
 
-
 		amp_u = 0.95;
 		amp_v = 0.5;
 		amp_w = 0;
@@ -175,6 +173,13 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 + amp_w));
 
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+
+		wave_data[0] = ad_arr[0]/1024.0f;
+		wave_data[1] = ad_arr[1]/1024.0f;
+		wave_data[2] = ad_arr[2]/1024.0f;
+		wave_data[3] = ad_arr[3]/1024.0f;
+
 	}
 
 }
@@ -224,13 +229,22 @@ int main(void)
 			WAVECAPTURE_TYPE_INT32,
 			WAVECAPTURE_TYPE_INT32,
   	};
+  	void* wavecap_var_ptr_array[4] = {
+  			&wave_data[0],
+			&wave_data[1],
+			&wave_data[2],
+			&wave_data[3],
+  	};
   	WaveCapture_Init_t wave_init;
   	wave_init.channel_num = 4;
   	wave_init.func_write = wave_tx_func;
   	wave_init.sampling_length = 256;
   	wave_init.type_array = wavecap_type;
+  	wave_init.var_ptr_array = wavecap_var_ptr_array;
   	int rtn = WaveCapture_Init(&wavecap, &wave_init);
   	printf("return = %d\n", rtn);
+
+
   	printf("type[0] = %d\n", wavecap.init.type_array[0]);
   	printf("type[1] = %d\n", wavecap.init.type_array[1]);
   	printf("type[2] = %d\n", wavecap.init.type_array[2]);
@@ -238,6 +252,7 @@ int main(void)
   	printf("sizeof(WaveCapture_Type_e) = %d\n", sizeof(WaveCapture_Type_e));
   	printf("sizeof(void*) = %d\n", sizeof(void*));
   	printf("type_array size = %d\n", malloc_usable_size(wavecap.init.type_array));
+  	printf("var_ptr_array size = %d\n", malloc_usable_size(wavecap.init.var_ptr_array));
   	printf("wavedata size = %d\n", malloc_usable_size(wavecap.wavedata));
   	printf("wavedata[0] size = %d\n", malloc_usable_size(wavecap.wavedata[0]));
   	printf("wavedata_length = %d\n", wavecap.init.sampling_length);

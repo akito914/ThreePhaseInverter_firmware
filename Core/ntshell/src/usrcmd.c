@@ -256,18 +256,160 @@ static int usrcmd_wave(int argc, char **argv)
 			uint32_t len = strlen(argv[3]);
 			if(len > 8 || argv[3] + len != endptr)
 			{
-				uart_puts("[channel] must be [00000000 - FFFFFFFF].\r\n");
+				uart_puts("ERROR\r\n");
 				return -1;
 			}
-			uart_puts("Succeed to convert string.\r\n");
-			WaveCapture_Set_Channel(&wavecap, ch_config);
+			int rtn = WaveCapture_Set_Channel(&wavecap, ch_config);
+			if(rtn != 0)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			printf("ch_config = %08x\r\n", ch_config);
+			uart_puts("OK\r\n");
+			return 0;
 		}
-
+		if(ntlibc_strcmp(argv[2], "triglevel") == 0)
+		{
+			char *endptr_f;
+			char *endptr_i;
+			float triglevel_f = strtof(argv[3], &endptr_f);
+			int32_t triglevel_i = strtol(argv[3], &endptr_i, 10);
+			uint32_t len = strlen(argv[3]);
+			if(len > 8 || argv[3] + len != endptr_f)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			WaveCapture_Set_TriggerLevel(&wavecap, triglevel_f, triglevel_i);
+			int rtn = WaveCapture_Set_TriggerLevel(&wavecap, triglevel_f, triglevel_i);
+			if(rtn != 0)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			printf("triglevel_f = %f, triglevel_i = %d\r\n", triglevel_f, triglevel_i);
+			uart_puts("OK\r\n");
+		}
+		if(ntlibc_strcmp(argv[2], "trigch") == 0)
+		{
+			char *endptr;
+			uint32_t trigch = strtoul(argv[3], &endptr, 10);
+			uint32_t len = strlen(argv[3]);
+			if(len > 8 || argv[3] + len != endptr)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			int rtn = WaveCapture_Set_TriggerChannel(&wavecap, trigch);
+			if(rtn != 0)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			printf("trigch = %d\r\n", trigch);
+			uart_puts("OK\r\n");
+			return 0;
+		}
+		if(ntlibc_strcmp(argv[2], "trigpos") == 0)
+		{
+			char *endptr;
+			int32_t trigpos = strtol(argv[3], &endptr, 10);
+			uint32_t len = strlen(argv[3]);
+			if(len > 8 || argv[3] + len != endptr)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			printf("trigpos = %d\r\n", trigpos);
+			int rtn = WaveCapture_Set_TriggerPos(&wavecap, trigpos);
+			if(rtn != 0)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			uart_puts("OK\r\n");
+			return 0;
+		}
+		if(ntlibc_strcmp(argv[2], "trigedge") == 0)
+		{
+			if(ntlibc_strcmp(argv[3], "rise") == 0)
+			{
+				int rtn = WaveCapture_Set_TriggerEdgeSlope(&wavecap, WAVECAPTURE_TRIG_SLOPE_RISE);
+				if(rtn != 0)
+				{
+					uart_puts("ERROR\r\n");
+					return -1;
+				}
+				uart_puts("OK\r\n");
+				return 0;
+			}
+			if(ntlibc_strcmp(argv[3], "fall") == 0)
+			{
+				int rtn = WaveCapture_Set_TriggerEdgeSlope(&wavecap, WAVECAPTURE_TRIG_SLOPE_FALL);
+				if(rtn != 0)
+				{
+					uart_puts("ERROR\r\n");
+					return -1;
+				}
+				uart_puts("OK\r\n");
+				return 0;
+			}
+			uart_puts("ERROR\r\n");
+			return 0;
+		}
+		if(ntlibc_strcmp(argv[2], "trigmode") == 0)
+		{
+			if(ntlibc_strcmp(argv[3], "auto") == 0)
+			{
+				int rtn = WaveCapture_Set_TriggerMode(&wavecap, WAVECAPTURE_TRIG_MODE_AUTO);
+				if(rtn != 0)
+				{
+					uart_puts("ERROR\r\n");
+					return -1;
+				}
+				uart_puts("OK\r\n");
+				return 0;
+			}
+			if(ntlibc_strcmp(argv[3], "normal") == 0)
+			{
+				int rtn = WaveCapture_Set_TriggerMode(&wavecap, WAVECAPTURE_TRIG_MODE_NORMAL);
+				if(rtn != 0)
+				{
+					uart_puts("ERROR\r\n");
+					return -1;
+				}
+				uart_puts("OK\r\n");
+				return 0;
+			}
+			uart_puts("ERROR\r\n");
+			return 0;
+		}
+		if(ntlibc_strcmp(argv[2], "decimate") == 0)
+		{
+			char *endptr;
+			uint32_t decimate = strtoul(argv[3], &endptr, 10);
+			uint32_t len = strlen(argv[3]);
+			if(len > 8 || argv[3] + len != endptr)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			printf("decimate = %d\r\n", decimate);
+			int rtn = WaveCapture_Set_Decimate(&wavecap, decimate);
+			if(rtn != 0)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			uart_puts("OK\r\n");
+			return 0;
+		}
 		return 0;
 	}
 	if (ntlibc_strcmp(argv[1], "get") == 0)
 	{
-
+		WaveCapture_Get_WaveForm(&wavecap);
 		return 0;
 	}
 	uart_puts("Unknown sub command found\r\n");

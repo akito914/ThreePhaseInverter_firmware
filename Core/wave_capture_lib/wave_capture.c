@@ -46,13 +46,24 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 	}
 	h->init.type_array = type_arr;
 
+	// Allocate for variable pointer array
+	void** pp_variable = malloc(sizeof(void*) * h->init.channel_num);
+	if(pp_variable == NULL)
+	{
+		return -1;
+	}
+	for(int ch = 0; ch < h->init.channel_num; ch++)
+	{
+		pp_variable[ch] = init->var_ptr_array[ch];
+	}
+	h->init.var_ptr_array = pp_variable;
+
 	// Allocate for wave memory
-	void** pp_wavedata = malloc(16);
-	printf("pp_wavedata allocate length = %d\n", sizeof(void*) * h->init.channel_num);
-	printf("pp_wavedata allocated length = %d\n", malloc_usable_size(pp_wavedata));
+	void** pp_wavedata = malloc(sizeof(void*) * h->init.channel_num);
 	if(pp_wavedata == NULL)
 	{
 		free(h->init.type_array);
+		free(h->init.var_ptr_array);
 		return -1;
 	}
 	for(int ch = 0; ch < h->init.channel_num; ch++)
@@ -69,6 +80,7 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 			}
 			free(pp_wavedata);
 			free(h->init.type_array);
+			free(h->init.var_ptr_array);
 			return -1;
 		}
 		pp_wavedata[ch] = p_ch_data;
@@ -84,11 +96,6 @@ void WaveCapture_Sampling(WaveCapture_t *h)
 
 }
 
-
-void WaveCapture_Polling(WaveCapture_t *h)
-{
-
-}
 
 int WaveCapture_Set_Channel(WaveCapture_t *h, uint32_t channel_select)
 {
@@ -115,7 +122,7 @@ int WaveCapture_Set_TriggerChannel(WaveCapture_t *h, uint32_t trig_channel)
 
 int WaveCapture_Set_TriggerPos(WaveCapture_t *h, int32_t trig_pos)
 {
-	int pos_min = -h->init.sampling_length / 2 + 1;
+	int pos_min = -(int32_t)(h->init.sampling_length / 2) + 1;
 	int pos_max = (h->init.sampling_length + 1) / 2 - 1;
 	if(trig_pos < pos_min)
 	{
@@ -129,10 +136,34 @@ int WaveCapture_Set_TriggerPos(WaveCapture_t *h, int32_t trig_pos)
 	return 0;
 }
 
+int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCapture_Slope_e slope)
+{
+	h->trig_slope = slope;
+	return 0;
+}
+
+int WaveCapture_Set_TriggerMode(WaveCapture_t *h, WaveCapture_Mode_e mode)
+{
+	h->trig_mode = mode;
+	return 0;
+}
+
+int WaveCapture_Set_Decimate(WaveCapture_t *h, uint32_t decimate)
+{
+	h->decimate = decimate;
+	return 0;
+}
+
+int WaveCapture_Get_WaveForm(WaveCapture_t *h)
+{
+	return 0;
+}
+
 
 void WaveCapture_Dispose(WaveCapture_t *h)
 {
 	free(h->init.type_array);
+	free(h->init.var_ptr_array);
 	for(int ch = 0; ch < h->init.channel_num; ch++)
 	{
 		free(h->wavedata[ch]);

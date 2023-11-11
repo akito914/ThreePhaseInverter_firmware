@@ -17,8 +17,8 @@ typedef enum
 
 typedef enum
 {
-	TRIG_MODE_AUTO = 0,
-	TRIG_MODE_NORMAL = 1,
+	WAVECAPTURE_TRIG_SLOPE_RISE = 0,
+	WAVECAPTURE_TRIG_SLOPE_FALL = 1,
 }WaveCapture_Slope_e;
 
 typedef enum
@@ -33,6 +33,7 @@ typedef struct
 	uint32_t sampling_length;
 	uint32_t channel_num;
 	WaveCapture_Type_e* type_array;
+	void** var_ptr_array;
 }WaveCapture_Init_t;
 
 typedef struct
@@ -43,17 +44,16 @@ typedef struct
 	int trig_lebel_i;
 	uint32_t trig_ch;
 	int32_t trig_pos;
+	WaveCapture_Slope_e trig_slope;
+	WaveCapture_Mode_e trig_mode;
+	uint32_t decimate;
 	void** wavedata;
 }WaveCapture_t;
 
 
 int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init);
 
-
 void WaveCapture_Sampling(WaveCapture_t *h);
-
-
-void WaveCapture_Polling(WaveCapture_t *h);
 
 int WaveCapture_Set_Channel(WaveCapture_t *h, uint32_t channel_select);
 
@@ -69,7 +69,7 @@ int WaveCapture_Set_TriggerMode(WaveCapture_t *h, WaveCapture_Mode_e mode);
 
 int WaveCapture_Set_Decimate(WaveCapture_t *h, uint32_t decimate);
 
-int WaveCapture_Get_WaveForm(WaveCapture_t *h, uint8_t *buf, uint32_t *length);
+int WaveCapture_Get_WaveForm(WaveCapture_t *h);
 
 
 void WaveCapture_Dispose(WaveCapture_t *h);
