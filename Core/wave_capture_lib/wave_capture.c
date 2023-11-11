@@ -25,9 +25,18 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 	// Initialize
 	h->ch_select = 0x00000000;
 	h->trig_level_f = 0.0f;
-	h->trig_lebel_i = 0;
+	h->trig_level_i = 0;
 	h->trig_ch = 0;
 	h->trig_pos = 0;
+	h->trig_slope = WAVECAPTURE_TRIG_SLOPE_RISE;
+	h->trig_mode = WAVECAPTURE_MODE_SINGLE;
+	h->decimate = 1;
+	h->cursor = 0;
+	h->cursor_prev = 0;
+	h->status = WAVECAPTURE_SAMPLE_FREERUN;
+	h->decimate_counter = 0;
+	h->cursor_trig = 0;
+	h->cursor_end = 0;
 
 	// Set configuration data
 	h->init.func_write = init->func_write;
@@ -91,8 +100,108 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 }
 
 
+static int detect_trigger(WaveCapture_t *h)
+{
+	void* ptr_now = h->wavedata[h->trig_ch] + h->cursor * get_bytes(h->init.type_array[h->trig_ch]);
+	void* ptr_prev = h->wavedata[h->trig_ch] + h->cursor_prev * get_bytes(h->init.type_array[h->trig_ch]);
+
+	int pole_now, pole_prev;
+	switch(h->init.type_array[h->trig_ch])
+	{
+	case WAVECAPTURE_TYPE_FLOAT:
+		pole_now = *(float*)ptr_now > h->trig_level_f;
+		pole_prev = *(float*)ptr_prev > h->trig_level_f;
+		break;
+	case WAVECAPTURE_TYPE_INT32:
+		pole_now = *(int32_t*)ptr_now > h->trig_level_i;
+		pole_prev = *(int32_t*)ptr_prev > h->trig_level_i;
+		break;
+	}
+
+	if(h->trig_slope == WAVECAPTURE_TRIG_SLOPE_RISE)
+	{
+		if(pole_prev == 0 && pole_now == 1)
+		{
+			return 1;
+		}
+	}
+	else if(h->trig_slope == WAVECAPTURE_TRIG_SLOPE_FALL)
+	{
+		if(pole_prev == 1 && pole_now == 0)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 void WaveCapture_Sampling(WaveCapture_t *h)
 {
+	if(h->status == WAVECAPTURE_SAMPLE_STOPPED)
+	{
+		return;
+	}
+
+	h->decimate_counter++;
+	if(h->decimate_counter >= h->decimate)
+	{
+		h->decimate_counter = 0;
+	}
+	if(h->decimate_counter != 0)
+	{
+		return;
+	}
+
+	for(int ch = 0; ch < h->init.channel_num; ch++)
+	{
+		void* dest_ptr = h->wavedata[ch] + h->cursor * get_bytes(h->init.type_array[ch]);
+		switch(h->init.type_array[ch])
+		{
+		case WAVECAPTURE_TYPE_FLOAT:
+			*((float*)dest_ptr) = *(float*)(h->init.var_ptr_array[ch]);
+			break;
+		case WAVECAPTURE_TYPE_INT32:
+			*((int32_t*)dest_ptr) = *(int32_t*)(h->init.var_ptr_array[ch]);
+			break;
+		}
+	}
+
+	// Trigger detection
+	switch(h->status)
+	{
+	case WAVECAPTURE_SAMPLE_FREERUN:
+		break;
+	case WAVECAPTURE_SAMPLE_TOTRIG:
+		if(detect_trigger(h))
+		{
+			h->cursor_trig = h->cursor;
+			uint32_t end = h->cursor_trig + h->init.sampling_length / 2 - h->trig_pos;
+			if(end >= h->init.sampling_length)
+			{
+				end -= h->init.sampling_length;
+			}
+			h->cursor_end = end;
+			h->status = WAVECAPTURE_SAMPLE_TOEND;
+		}
+		break;
+	case WAVECAPTURE_SAMPLE_TOEND:
+		if(h->cursor == h->cursor_end)
+		{
+			h->status = WAVECAPTURE_SAMPLE_STOPPED;
+		}
+		break;
+	default:
+		break;
+	}
+
+	h->cursor_prev = h->cursor;
+	h->cursor += 1;
+	if(h->cursor >= h->init.sampling_length)
+	{
+		h->cursor = 0;
+	}
+
 
 }
 
@@ -106,7 +215,7 @@ int WaveCapture_Set_Channel(WaveCapture_t *h, uint32_t channel_select)
 int WaveCapture_Set_TriggerLevel(WaveCapture_t *h, float trig_level_f, int trig_level_i)
 {
 	h->trig_level_f = trig_level_f;
-	h->trig_lebel_i = trig_level_i;
+	h->trig_level_i = trig_level_i;
 	return 0;
 }
 
@@ -136,7 +245,7 @@ int WaveCapture_Set_TriggerPos(WaveCapture_t *h, int32_t trig_pos)
 	return 0;
 }
 
-int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCapture_Slope_e slope)
+int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCaptureTrigMode_e slope)
 {
 	h->trig_slope = slope;
 	return 0;
@@ -150,12 +259,60 @@ int WaveCapture_Set_TriggerMode(WaveCapture_t *h, WaveCapture_Mode_e mode)
 
 int WaveCapture_Set_Decimate(WaveCapture_t *h, uint32_t decimate)
 {
+	if(decimate <= 0)
+	{
+		return -1;
+	}
 	h->decimate = decimate;
 	return 0;
 }
 
 int WaveCapture_Get_WaveForm(WaveCapture_t *h)
 {
+	h->status = WAVECAPTURE_SAMPLE_TOTRIG;
+	while(h->status != WAVECAPTURE_SAMPLE_STOPPED){}
+	for(int ch = 0; ch < h->init.channel_num; ch++)
+	{
+		switch(h->init.type_array[ch])
+		{
+		case WAVECAPTURE_TYPE_FLOAT:
+			for(int i = h->cursor_end+1; i < h->init.sampling_length; i++)
+			{
+				uint8_t buf[100];
+				float val = ((float*)(h->wavedata[ch]))[i];
+				sprintf(buf, "%f, ", val);
+				h->init.func_write(buf, strlen(buf));
+			}
+			for(int i = 0; i <= h->cursor_end; i++)
+			{
+				uint8_t buf[100];
+				float val = ((float*)(h->wavedata[ch]))[i];
+				sprintf(buf, "%f, ", val);
+				h->init.func_write(buf, strlen(buf));
+			}
+			break;
+		case WAVECAPTURE_TYPE_INT32:
+			for(int i = h->cursor_end+1; i < h->init.sampling_length; i++)
+			{
+				uint8_t buf[100];
+				int32_t val = ((int32_t*)(h->wavedata[ch]))[i];
+				sprintf(buf, "%d, ", val);
+				h->init.func_write(buf, strlen(buf));
+			}
+			for(int i = 0; i <= h->cursor_end; i++)
+			{
+				uint8_t buf[100];
+				int32_t val = ((int32_t*)(h->wavedata[ch]))[i];
+				sprintf(buf, "%d, ", val);
+				h->init.func_write(buf, strlen(buf));
+			}
+			break;
+		}
+		h->init.func_write("\r\n", 2);
+	}
+
+	h->status = WAVECAPTURE_SAMPLE_FREERUN;
+
 	return 0;
 }
 

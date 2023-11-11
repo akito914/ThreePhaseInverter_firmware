@@ -62,6 +62,9 @@ WaveCapture_t wavecap;
 
 
 float wave_data[4] = {0};
+int32_t wave_data_i[4] = {0};
+
+int test_counter = 0;
 
 
 /* USER CODE END PV */
@@ -88,7 +91,7 @@ void __io_putchar(uint8_t ch)
 int wave_tx_func(const uint8_t *buf, int length)
 {
 	HAL_StatusTypeDef status;
-	status = HAL_UART_Transmit(&huart2, &buf, (uint16_t)length, 1000);
+	status = HAL_UART_Transmit(&huart2, buf, (uint16_t)length, 1000);
 	if(status != HAL_OK)
 	{
 		return 0;
@@ -175,10 +178,25 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
 
-		wave_data[0] = ad_arr[0]/1024.0f;
-		wave_data[1] = ad_arr[1]/1024.0f;
-		wave_data[2] = ad_arr[2]/1024.0f;
-		wave_data[3] = ad_arr[3]/1024.0f;
+//		wave_data[0] = ad_arr[0]/1024.0f;
+//		wave_data[1] = ad_arr[1]/1024.0f;
+//		wave_data[2] = ad_arr[2]/1024.0f;
+//		wave_data[3] = ad_arr[3]/1024.0f;
+
+
+		wave_data[0] = (float)((test_counter + 0) & 0x4) - 8.0f;
+		wave_data[1] = (float)((test_counter + 2) & 0x4) - 8.0f;
+		wave_data[2] = (float)((test_counter + 4) & 0x4) - 8.0f;
+		wave_data[3] = (float)((test_counter + 6) & 0x4) - 8.0f;
+
+		wave_data_i[0] = (test_counter + 0) & 0xF;
+		wave_data_i[1] = (test_counter + 2) & 0xF;
+		wave_data_i[2] = (test_counter + 4) & 0xF;
+		wave_data_i[3] = (test_counter + 6) & 0xF;
+
+		WaveCapture_Sampling(&wavecap);
+
+		test_counter++;
 
 	}
 
@@ -224,21 +242,21 @@ int main(void)
   	printf("Hello World\n");
 
   	WaveCapture_Type_e wavecap_type[] = {
-  			WAVECAPTURE_TYPE_FLOAT,
-  			WAVECAPTURE_TYPE_FLOAT,
+  			WAVECAPTURE_TYPE_INT32,
+			WAVECAPTURE_TYPE_INT32,
 			WAVECAPTURE_TYPE_INT32,
 			WAVECAPTURE_TYPE_INT32,
   	};
   	void* wavecap_var_ptr_array[4] = {
-  			&wave_data[0],
-			&wave_data[1],
-			&wave_data[2],
-			&wave_data[3],
+  			&(wave_data_i[0]),
+			&(wave_data_i[1]),
+			&(wave_data_i[2]),
+			&(wave_data_i[3]),
   	};
   	WaveCapture_Init_t wave_init;
   	wave_init.channel_num = 4;
   	wave_init.func_write = wave_tx_func;
-  	wave_init.sampling_length = 256;
+  	wave_init.sampling_length = 32;
   	wave_init.type_array = wavecap_type;
   	wave_init.var_ptr_array = wavecap_var_ptr_array;
   	int rtn = WaveCapture_Init(&wavecap, &wave_init);
@@ -259,9 +277,6 @@ int main(void)
 
 
 
-  	ntshell_usr_init(&nts);
-
-	ntshell_execute(&nts);
 
 
 //	HAL_Delay(1000);
@@ -339,6 +354,10 @@ int main(void)
 
 
 
+
+  	ntshell_usr_init(&nts);
+
+	ntshell_execute(&nts);
 
 
   /* USER CODE END 2 */

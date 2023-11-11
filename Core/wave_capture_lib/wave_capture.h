@@ -17,15 +17,24 @@ typedef enum
 
 typedef enum
 {
-	WAVECAPTURE_TRIG_SLOPE_RISE = 0,
-	WAVECAPTURE_TRIG_SLOPE_FALL = 1,
-}WaveCapture_Slope_e;
+	WAVECAPTURE_TRIG_SLOPE_RISE = 1,
+	WAVECAPTURE_TRIG_SLOPE_FALL = 2,
+}WaveCaptureTrigMode_e;
 
 typedef enum
 {
-	WAVECAPTURE_TRIG_MODE_AUTO = 0,
-	WAVECAPTURE_TRIG_MODE_NORMAL = 1,
+	WAVECAPTURE_MODE_AUTO = 0,
+	WAVECAPTURE_MODE_NORMAL = 1,
+	WAVECAPTURE_MODE_SINGLE = 2,
 }WaveCapture_Mode_e;
+
+typedef enum
+{
+	WAVECAPTURE_SAMPLE_FREERUN,
+	WAVECAPTURE_SAMPLE_TOTRIG,
+	WAVECAPTURE_SAMPLE_TOEND,
+	WAVECAPTURE_SAMPLE_STOPPED,
+}WaveCapture_SamplingStatus_e;
 
 typedef struct
 {
@@ -41,13 +50,19 @@ typedef struct
 	WaveCapture_Init_t init;
 	uint32_t ch_select;
 	float trig_level_f;
-	int trig_lebel_i;
+	int trig_level_i;
 	uint32_t trig_ch;
 	int32_t trig_pos;
-	WaveCapture_Slope_e trig_slope;
+	WaveCaptureTrigMode_e trig_slope;
 	WaveCapture_Mode_e trig_mode;
 	uint32_t decimate;
 	void** wavedata;
+	uint32_t cursor;
+	uint32_t cursor_prev;
+	uint32_t cursor_trig;
+	uint32_t cursor_end;
+	uint32_t decimate_counter;
+	WaveCapture_SamplingStatus_e status;
 }WaveCapture_t;
 
 
@@ -63,7 +78,7 @@ int WaveCapture_Set_TriggerChannel(WaveCapture_t *h, uint32_t trig_channel);
 
 int WaveCapture_Set_TriggerPos(WaveCapture_t *h, int32_t trig_pos);
 
-int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCapture_Slope_e slope);
+int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCaptureTrigMode_e slope);
 
 int WaveCapture_Set_TriggerMode(WaveCapture_t *h, WaveCapture_Mode_e mode);
 
