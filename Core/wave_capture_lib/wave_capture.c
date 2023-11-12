@@ -267,10 +267,19 @@ int WaveCapture_Set_Decimate(WaveCapture_t *h, uint32_t decimate)
 	return 0;
 }
 
-int WaveCapture_Get_WaveForm(WaveCapture_t *h)
+int WaveCapture_Start_Sampling(WaveCapture_t *h)
 {
 	h->status = WAVECAPTURE_SAMPLE_TOTRIG;
-	while(h->status != WAVECAPTURE_SAMPLE_STOPPED){}
+	return 0;
+}
+
+int WaveCapture_Get_WaveForm(WaveCapture_t *h)
+{
+	if(h->status != WAVECAPTURE_SAMPLE_STOPPED)
+	{
+		return -1;
+	}
+
 	for(int ch = 0; ch < h->init.channel_num; ch++)
 	{
 		switch(h->init.type_array[ch])
@@ -278,33 +287,33 @@ int WaveCapture_Get_WaveForm(WaveCapture_t *h)
 		case WAVECAPTURE_TYPE_FLOAT:
 			for(int i = h->cursor_end+1; i < h->init.sampling_length; i++)
 			{
-				uint8_t buf[100];
+				char buf[100];
 				float val = ((float*)(h->wavedata[ch]))[i];
-				sprintf(buf, "%f, ", val);
-				h->init.func_write(buf, strlen(buf));
+				int len = sprintf(buf, "%f, ", val);
+				h->init.func_write((uint8_t*)buf, len);
 			}
 			for(int i = 0; i <= h->cursor_end; i++)
 			{
-				uint8_t buf[100];
+				char buf[100];
 				float val = ((float*)(h->wavedata[ch]))[i];
-				sprintf(buf, "%f, ", val);
-				h->init.func_write(buf, strlen(buf));
+				int len = sprintf(buf, "%f, ", val);
+				h->init.func_write((uint8_t*)buf, len);
 			}
 			break;
 		case WAVECAPTURE_TYPE_INT32:
 			for(int i = h->cursor_end+1; i < h->init.sampling_length; i++)
 			{
-				uint8_t buf[100];
+				char buf[100];
 				int32_t val = ((int32_t*)(h->wavedata[ch]))[i];
-				sprintf(buf, "%d, ", val);
-				h->init.func_write(buf, strlen(buf));
+				int len = sprintf(buf, "%ld, ", val);
+				h->init.func_write((uint8_t*)buf, len);
 			}
 			for(int i = 0; i <= h->cursor_end; i++)
 			{
-				uint8_t buf[100];
+				char buf[100];
 				int32_t val = ((int32_t*)(h->wavedata[ch]))[i];
-				sprintf(buf, "%d, ", val);
-				h->init.func_write(buf, strlen(buf));
+				int len = sprintf(buf, "%ld, ", val);
+				h->init.func_write((uint8_t*)buf, len);
 			}
 			break;
 		}

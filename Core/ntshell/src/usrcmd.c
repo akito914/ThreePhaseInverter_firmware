@@ -290,6 +290,7 @@ static int usrcmd_wave(int argc, char **argv)
 			}
 			printf("triglevel_f = %f, triglevel_i = %d\r\n", triglevel_f, triglevel_i);
 			uart_puts("OK\r\n");
+			return 0;
 		}
 		if(ntlibc_strcmp(argv[2], "trigch") == 0)
 		{
@@ -419,10 +420,27 @@ static int usrcmd_wave(int argc, char **argv)
 		uart_puts("Unknown sub command found\r\n");
 		return 0;
 	}
+	if (ntlibc_strcmp(argv[1], "start") == 0)
+	{
+		WaveCapture_Start_Sampling(&wavecap);
+		uart_puts("OK\r\n");
+		return 0;
+	}
 	if (ntlibc_strcmp(argv[1], "get") == 0)
 	{
-		WaveCapture_Get_WaveForm(&wavecap);
-		return 0;
+		if(ntlibc_strcmp(argv[2], "wave") == 0)
+		{
+			int rtn = WaveCapture_Get_WaveForm(&wavecap);
+			if(rtn != 0)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			uart_puts("OK\r\n");
+			return 0;
+		}
+		uart_puts("Unknown sub command found\r\n");
+		return -1;
 	}
 	if (ntlibc_strcmp(argv[1], "dump") == 0)
 	{

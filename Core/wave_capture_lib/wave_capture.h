@@ -84,6 +84,8 @@ int WaveCapture_Set_TriggerMode(WaveCapture_t *h, WaveCapture_Mode_e mode);
 
 int WaveCapture_Set_Decimate(WaveCapture_t *h, uint32_t decimate);
 
+int WaveCapture_Start_Sampling(WaveCapture_t *h);
+
 int WaveCapture_Get_WaveForm(WaveCapture_t *h);
 
 
