@@ -417,6 +417,26 @@ static int usrcmd_wave(int argc, char **argv)
 			uart_puts("OK\r\n");
 			return 0;
 		}
+		if(ntlibc_strcmp(argv[2], "timeout") == 0)
+		{
+			char *endptr;
+			uint32_t timeout = strtoul(argv[3], &endptr, 10);
+			uint32_t len = strlen(argv[3]);
+			if(len > 8 || argv[3] + len != endptr)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			printf("timeout = %d\r\n", timeout);
+			int rtn = WaveCapture_Set_Timeout(&wavecap, timeout);
+			if(rtn != 0)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			uart_puts("OK\r\n");
+			return 0;
+		}
 		uart_puts("Unknown sub command found\r\n");
 		return 0;
 	}

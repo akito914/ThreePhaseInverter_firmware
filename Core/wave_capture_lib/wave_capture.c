@@ -37,6 +37,8 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 	h->decimate_counter = 0;
 	h->cursor_trig = 0;
 	h->cursor_end = 0;
+	h->timeout = 65536;
+	h->timeout_count = 0;
 
 	// Set configuration data
 	h->init.func_write = init->func_write;
@@ -135,6 +137,14 @@ static int detect_trigger(WaveCapture_t *h)
 	return 0;
 }
 
+static int timeout_check(WaveCapture_t *h)
+{
+	if(h->trig_mode == WAVECAPTURE_MODE_AUTO && h->timeout_count >= h->timeout)
+	{
+		return 1;
+	}
+	return 0;
+}
 
 void WaveCapture_Sampling(WaveCapture_t *h)
 {
@@ -173,7 +183,7 @@ void WaveCapture_Sampling(WaveCapture_t *h)
 	case WAVECAPTURE_SAMPLE_FREERUN:
 		break;
 	case WAVECAPTURE_SAMPLE_TOTRIG:
-		if(detect_trigger(h))
+		if(detect_trigger(h) || timeout_check(h))
 		{
 			h->cursor_trig = h->cursor;
 			uint32_t end = h->cursor_trig + h->init.sampling_length / 2 - h->trig_pos;
@@ -182,7 +192,15 @@ void WaveCapture_Sampling(WaveCapture_t *h)
 				end -= h->init.sampling_length;
 			}
 			h->cursor_end = end;
+			h->timeout_count = 0;
 			h->status = WAVECAPTURE_SAMPLE_TOEND;
+		}
+		else
+		{
+			if(h->trig_mode == WAVECAPTURE_MODE_AUTO)
+			{
+				h->timeout_count++;
+			}
 		}
 		break;
 	case WAVECAPTURE_SAMPLE_TOEND:
@@ -245,7 +263,7 @@ int WaveCapture_Set_TriggerPos(WaveCapture_t *h, int32_t trig_pos)
 	return 0;
 }
 
-int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCaptureTrigMode_e slope)
+int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCaptureTrigSlope_e slope)
 {
 	h->trig_slope = slope;
 	return 0;
@@ -322,6 +340,12 @@ int WaveCapture_Get_WaveForm(WaveCapture_t *h)
 
 	h->status = WAVECAPTURE_SAMPLE_FREERUN;
 
+	return 0;
+}
+
+int WaveCapture_Set_Timeout(WaveCapture_t *h, uint32_t timeout)
+{
+	h->timeout = timeout;
 	return 0;
 }
 

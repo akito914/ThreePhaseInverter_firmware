@@ -19,7 +19,7 @@ typedef enum
 {
 	WAVECAPTURE_TRIG_SLOPE_RISE = 1,
 	WAVECAPTURE_TRIG_SLOPE_FALL = 2,
-}WaveCaptureTrigMode_e;
+}WaveCaptureTrigSlope_e;
 
 typedef enum
 {
@@ -53,7 +53,7 @@ typedef struct
 	int trig_level_i;
 	uint32_t trig_ch;
 	int32_t trig_pos;
-	WaveCaptureTrigMode_e trig_slope;
+	WaveCaptureTrigSlope_e trig_slope;
 	WaveCapture_Mode_e trig_mode;
 	uint32_t decimate;
 	void** wavedata;
@@ -61,6 +61,8 @@ typedef struct
 	uint32_t cursor_prev;
 	uint32_t cursor_trig;
 	uint32_t cursor_end;
+	uint32_t timeout;
+	uint32_t timeout_count;
 	uint32_t decimate_counter;
 	WaveCapture_SamplingStatus_e status;
 }WaveCapture_t;
@@ -78,11 +80,13 @@ int WaveCapture_Set_TriggerChannel(WaveCapture_t *h, uint32_t trig_channel);
 
 int WaveCapture_Set_TriggerPos(WaveCapture_t *h, int32_t trig_pos);
 
-int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCaptureTrigMode_e slope);
+int WaveCapture_Set_TriggerEdgeSlope(WaveCapture_t *h, WaveCaptureTrigSlope_e slope);
 
 int WaveCapture_Set_TriggerMode(WaveCapture_t *h, WaveCapture_Mode_e mode);
 
 int WaveCapture_Set_Decimate(WaveCapture_t *h, uint32_t decimate);
+
+int WaveCapture_Set_Timeout(WaveCapture_t *h, uint32_t timeout);
 
 int WaveCapture_Start_Sampling(WaveCapture_t *h);
 
