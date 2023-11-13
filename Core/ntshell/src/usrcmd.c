@@ -68,7 +68,7 @@ int usrcmd_execute(const char *text);
 static int usrcmd_ntopt_callback(int argc, char **argv, void *extobj);
 static int usrcmd_help(int argc, char **argv);
 static int usrcmd_info(int argc, char **argv);
-static int usrcmd_wave(int argc, char **argv);
+static int usrcmd_wavecap(int argc, char **argv);
 
 typedef struct {
     char *cmd;
@@ -80,7 +80,7 @@ typedef struct {
 static const cmd_table_t cmdlist[] = {
     { "help", "This is a description text string for help command.", usrcmd_help },
     { "info", "This is a description text string for info command.", usrcmd_info },
-    { "wave", "This is a description text string for info command.", usrcmd_wave },
+    { "wavecap", "This is a description text string for info command.", usrcmd_wavecap },
 };
 #pragma GCC diagnostic warning "-Wwrite-strings"
 
@@ -222,31 +222,31 @@ static int usrcmd_info(int argc, char **argv)
 
 
 
-static int usrcmd_wave(int argc, char **argv)
+static int usrcmd_wavecap(int argc, char **argv)
 {
 	if (argc < 2)
 	{
-		uart_puts("wave set channel\r\n");
-		uart_puts("wave set triglevel\r\n");
-		uart_puts("wave set trigch\r\n");
-		uart_puts("wave set trigpos\r\n");
-		uart_puts("wave set trigslope\r\n");
-		uart_puts("wave set trigmode\r\n");
-		uart_puts("wave set decimate\r\n");
-		uart_puts("wave get wave\r\n");
+		uart_puts("wavecap set channel\r\n");
+		uart_puts("wavecap set triglevel\r\n");
+		uart_puts("wavecap set trigch\r\n");
+		uart_puts("wavecap set trigpos\r\n");
+		uart_puts("wavecap set trigslope\r\n");
+		uart_puts("wavecap set trigmode\r\n");
+		uart_puts("wavecap set decimate\r\n");
+		uart_puts("wavecap get wave\r\n");
 		return -1;
 	}
 	if (ntlibc_strcmp(argv[1], "set") == 0)
 	{
 		if(argc < 4)
 		{
-			uart_puts("wave set channel [channel]\r\n");
-			uart_puts("wave set triglevel [level]\r\n");
-			uart_puts("wave set trigch [channel]\r\n");
-			uart_puts("wave set trigpos [pos]\r\n");
-			uart_puts("wave set trigslope [slope]\r\n");
-			uart_puts("wave set trigmode [mode]\r\n");
-			uart_puts("wave set decimate [deimate]\r\n");
+			uart_puts("wavecap set channel [channel]\r\n");
+			uart_puts("wavecap set triglevel [level]\r\n");
+			uart_puts("wavecap set trigch [channel]\r\n");
+			uart_puts("wavecap set trigpos [pos]\r\n");
+			uart_puts("wavecap set trigslope [slope]\r\n");
+			uart_puts("wavecap set trigmode [mode]\r\n");
+			uart_puts("wavecap set decimate [deimate]\r\n");
 			return -1;
 		}
 		if(ntlibc_strcmp(argv[2], "channel") == 0)

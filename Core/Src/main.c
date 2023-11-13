@@ -178,26 +178,13 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
 
-//		wave_data[0] = ad_arr[0]/1024.0f;
-//		wave_data[1] = ad_arr[1]/1024.0f;
-//		wave_data[2] = ad_arr[2]/1024.0f;
-//		wave_data[3] = ad_arr[3]/1024.0f;
-
-
-
-		wave_data_i[0] = (test_counter + 0) & 0xF;
-		wave_data_i[1] = (test_counter + 2) & 0xF;
-		wave_data_i[2] = (test_counter + 4) & 0xF;
-		wave_data_i[3] = (test_counter + 6) & 0xF;
-
-		wave_data[0] = wave_data_i[0] / 8.0f - 1.0f;
-		wave_data[1] = wave_data_i[1] / 8.0f - 1.0f;
-		wave_data[2] = wave_data_i[2] / 8.0f - 1.0f;
-		wave_data[3] = wave_data_i[3] / 8.0f - 1.0f;
+		wave_data[0] = ad_arr[0]/4096.0f * 5.0f;
+		wave_data[1] = ad_arr[1]/4096.0f * 5.0f;
+		wave_data[2] = ad_arr[2]/4096.0f * 5.0f;
+		wave_data[3] = ad_arr[3]/4096.0f * 5.0f;
 
 		WaveCapture_Sampling(&wavecap);
 
-		test_counter++;
 
 	}
 
@@ -242,30 +229,22 @@ int main(void)
 
   	printf("Hello World\n");
 
-  	WaveCapture_Type_e wavecap_type[8] = {
-  			WAVECAPTURE_TYPE_INT32,
-			WAVECAPTURE_TYPE_INT32,
-  			WAVECAPTURE_TYPE_INT32,
-			WAVECAPTURE_TYPE_INT32,
+  	WaveCapture_Type_e wavecap_type[] = {
 			WAVECAPTURE_TYPE_FLOAT,
 			WAVECAPTURE_TYPE_FLOAT,
 			WAVECAPTURE_TYPE_FLOAT,
 			WAVECAPTURE_TYPE_FLOAT,
   	};
-  	void* wavecap_var_ptr_array[8] = {
-  			&(wave_data_i[0]),
-			&(wave_data_i[1]),
-			&(wave_data_i[2]),
-			&(wave_data_i[3]),
+  	void* wavecap_var_ptr_array[] = {
   			&(wave_data[0]),
 			&(wave_data[1]),
 			&(wave_data[2]),
 			&(wave_data[3]),
   	};
   	WaveCapture_Init_t wave_init;
-  	wave_init.channel_num = 8;
+  	wave_init.channel_num = 4;
   	wave_init.func_write = wave_tx_func;
-  	wave_init.sampling_length = 32;
+  	wave_init.sampling_length = 1024;
   	wave_init.type_array = wavecap_type;
   	wave_init.var_ptr_array = wavecap_var_ptr_array;
   	int rtn = WaveCapture_Init(&wavecap, &wave_init);
