@@ -37,7 +37,7 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 	h->decimate_counter = 0;
 	h->cursor_trig = 0;
 	h->cursor_end = 0;
-	h->timeout = 65536;
+	h->timeout = 1024;
 	h->timeout_count = 0;
 
 	// Set configuration data

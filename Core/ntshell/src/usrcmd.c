@@ -68,6 +68,7 @@ int usrcmd_execute(const char *text);
 static int usrcmd_ntopt_callback(int argc, char **argv, void *extobj);
 static int usrcmd_help(int argc, char **argv);
 static int usrcmd_info(int argc, char **argv);
+static int usrcmd_test(int argc, char **argv);
 static int usrcmd_wavecap(int argc, char **argv);
 
 typedef struct {
@@ -80,6 +81,7 @@ typedef struct {
 static const cmd_table_t cmdlist[] = {
     { "help", "This is a description text string for help command.", usrcmd_help },
     { "info", "This is a description text string for info command.", usrcmd_info },
+    { "test", "This is a description text string for info command.", usrcmd_test },
     { "wavecap", "This is a description text string for info command.", usrcmd_wavecap },
 };
 #pragma GCC diagnostic warning "-Wwrite-strings"
@@ -221,6 +223,23 @@ static int usrcmd_info(int argc, char **argv)
 }
 
 
+static int usrcmd_test(int argc, char **argv)
+{
+	int counter = 0;
+	while(1)
+	{
+		HAL_Delay(200);
+		if(checkSuspens() != 0)
+		{
+			return 0;
+		}
+		printf("test : counter = %d\n", counter);
+		counter += 1;
+	}
+    return -1;
+}
+
+
 
 static int usrcmd_wavecap(int argc, char **argv)
 {
@@ -332,7 +351,7 @@ static int usrcmd_wavecap(int argc, char **argv)
 			uart_puts("OK\r\n");
 			return 0;
 		}
-		if(ntlibc_strcmp(argv[2], "trigedge") == 0)
+		if(ntlibc_strcmp(argv[2], "trigslope") == 0)
 		{
 			if(ntlibc_strcmp(argv[3], "rise") == 0)
 			{
