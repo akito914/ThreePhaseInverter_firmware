@@ -25,6 +25,19 @@ static int get_bytes(WaveCapture_Type_e type)
 }
 
 
+static int WaveCap_printf(WaveCapture_t *h, const char* fmt, ...)
+{
+	char buf[100];
+	int count;
+	va_list arg;
+	va_start(arg, fmt);
+	count = vsprintf(buf, fmt, arg);
+	va_end(arg);
+	h->init.func_write((uint8_t*)buf, strlen(buf));
+	return count;
+}
+
+
 int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 {
 	// Initialize
@@ -277,63 +290,54 @@ int WaveCapture_Get_WaveForm(WaveCapture_t *h)
 		return -1;
 	}
 
+	WaveCap_printf(h, "{\r\n");
+	WaveCap_printf(h, "  \"wave_pts\": [\r\n");
 	for(int ch = 0; ch < h->init.channel_num; ch++)
 	{
+		if(ch != 0) WaveCap_printf(h, ", \r\n");
+		WaveCap_printf(h, "    [");
 		switch(h->init.ch_info_array[ch].type)
 		{
 		case WAVECAPTURE_TYPE_FLOAT:
 			for(int i = h->cursor_end+1; i < h->init.sampling_length; i++)
 			{
-				char buf[100];
 				float val = ((float*)(h->wavedata[ch]))[i];
-				int len = sprintf(buf, "%f, ", val);
-				h->init.func_write((uint8_t*)buf, len);
+				if(i != h->cursor_end+1) WaveCap_printf(h, ", ");
+				WaveCap_printf(h, "%f", val);
 			}
 			for(int i = 0; i <= h->cursor_end; i++)
 			{
-				char buf[100];
 				float val = ((float*)(h->wavedata[ch]))[i];
-				int len = sprintf(buf, "%f, ", val);
-				h->init.func_write((uint8_t*)buf, len);
+				WaveCap_printf(h, ", ");
+				WaveCap_printf(h, "%f", val);
 			}
 			break;
 		case WAVECAPTURE_TYPE_INT32:
 			for(int i = h->cursor_end+1; i < h->init.sampling_length; i++)
 			{
-				char buf[100];
 				int32_t val = ((int32_t*)(h->wavedata[ch]))[i];
-				int len = sprintf(buf, "%ld, ", val);
-				h->init.func_write((uint8_t*)buf, len);
+				if(i != h->cursor_end+1) WaveCap_printf(h, ", ");
+				WaveCap_printf(h, "%ld", val);
 			}
 			for(int i = 0; i <= h->cursor_end; i++)
 			{
-				char buf[100];
 				int32_t val = ((int32_t*)(h->wavedata[ch]))[i];
-				int len = sprintf(buf, "%ld, ", val);
-				h->init.func_write((uint8_t*)buf, len);
+				WaveCap_printf(h, ", ");
+				WaveCap_printf(h, "%ld", val);
 			}
 			break;
 		}
-		h->init.func_write("\r\n", 2);
+		WaveCap_printf(h, "]");
 	}
+	WaveCap_printf(h, "\r\n");
+	WaveCap_printf(h, "  ]\r\n");
+	WaveCap_printf(h, "}\r\n");
 
 	h->status = WAVECAPTURE_SAMPLE_FREERUN;
 
 	return 0;
 }
 
-
-static int WaveCap_printf(WaveCapture_t *h, const char* fmt, ...)
-{
-	char buf[100];
-	int count;
-	va_list arg;
-	va_start(arg, fmt);
-	count = vsprintf(buf, fmt, arg);
-	va_end(arg);
-	h->init.func_write((uint8_t*)buf, strlen(buf));
-	return count;
-}
 
 int WaveCapture_Get_WaveInfo(WaveCapture_t *h)
 {
