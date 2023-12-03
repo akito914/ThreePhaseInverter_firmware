@@ -9,10 +9,11 @@
 
 typedef int (*WaveCapture_SerialWrite_f)(const uint8_t *buf, int length);
 
+
 typedef enum
 {
-	WAVECAPTURE_TYPE_FLOAT,
-	WAVECAPTURE_TYPE_INT32,
+	WAVECAPTURE_TYPE_FLOAT = 0,
+	WAVECAPTURE_TYPE_INT32 = 1,
 }WaveCapture_Type_e;
 
 typedef enum
@@ -38,11 +39,18 @@ typedef enum
 
 typedef struct
 {
+	char* name;
+	WaveCapture_Type_e type;
+	void* var_ptr;
+}WaveCapture_Init_ChannelInfo_t;
+
+typedef struct
+{
 	WaveCapture_SerialWrite_f func_write;
 	uint32_t sampling_length;
+	float sampling_freq;
 	uint32_t channel_num;
-	WaveCapture_Type_e* type_array;
-	void** var_ptr_array;
+	WaveCapture_Init_ChannelInfo_t* ch_info_array;
 }WaveCapture_Init_t;
 
 typedef struct
@@ -92,6 +100,7 @@ int WaveCapture_Start_Sampling(WaveCapture_t *h);
 
 int WaveCapture_Get_WaveForm(WaveCapture_t *h);
 
+int WaveCapture_Get_WaveInfo(WaveCapture_t *h);
 
 void WaveCapture_Dispose(WaveCapture_t *h);
 

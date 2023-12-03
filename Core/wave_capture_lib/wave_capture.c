@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
+#include <string.h>
+#include <stdarg.h>
+
+
+const char* WaveCapture_TypeName[] = {"Float", "Int32"};
 
 
 static int get_bytes(WaveCapture_Type_e type)
@@ -43,44 +48,20 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 	// Set configuration data
 	h->init.func_write = init->func_write;
 	h->init.sampling_length = init->sampling_length;
+	h->init.sampling_freq = init->sampling_freq;
 	h->init.channel_num = init->channel_num;
-
-	// Allocate for type array
-	WaveCapture_Type_e* type_arr = malloc(sizeof(WaveCapture_Type_e) * h->init.channel_num);
-	if(type_arr == NULL)
-	{
-		return -1;
-	}
-	for(int ch = 0; ch < h->init.channel_num; ch++)
-	{
-		type_arr[ch] = init->type_array[ch];
-	}
-	h->init.type_array = type_arr;
-
-	// Allocate for variable pointer array
-	void** pp_variable = malloc(sizeof(void*) * h->init.channel_num);
-	if(pp_variable == NULL)
-	{
-		return -1;
-	}
-	for(int ch = 0; ch < h->init.channel_num; ch++)
-	{
-		pp_variable[ch] = init->var_ptr_array[ch];
-	}
-	h->init.var_ptr_array = pp_variable;
+	h->init.ch_info_array = init->ch_info_array;
 
 	// Allocate for wave memory
 	void** pp_wavedata = malloc(sizeof(void*) * h->init.channel_num);
 	if(pp_wavedata == NULL)
 	{
-		free(h->init.type_array);
-		free(h->init.var_ptr_array);
 		return -1;
 	}
 	for(int ch = 0; ch < h->init.channel_num; ch++)
 	{
 		// [ch] data allocation
-		int ch_data_size = get_bytes(h->init.type_array[ch]);
+		int ch_data_size = get_bytes(h->init.ch_info_array[ch].type);
 		void* p_ch_data = malloc(ch_data_size * h->init.sampling_length);
 		if(p_ch_data == NULL)
 		{
@@ -90,8 +71,6 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 				free(pp_wavedata[i]);
 			}
 			free(pp_wavedata);
-			free(h->init.type_array);
-			free(h->init.var_ptr_array);
 			return -1;
 		}
 		pp_wavedata[ch] = p_ch_data;
@@ -104,11 +83,11 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 
 static int detect_trigger(WaveCapture_t *h)
 {
-	void* ptr_now = h->wavedata[h->trig_ch] + h->cursor * get_bytes(h->init.type_array[h->trig_ch]);
-	void* ptr_prev = h->wavedata[h->trig_ch] + h->cursor_prev * get_bytes(h->init.type_array[h->trig_ch]);
+	void* ptr_now = h->wavedata[h->trig_ch] + h->cursor * get_bytes(h->init.ch_info_array[h->trig_ch].type);
+	void* ptr_prev = h->wavedata[h->trig_ch] + h->cursor_prev * get_bytes(h->init.ch_info_array[h->trig_ch].type);
 
 	int pole_now, pole_prev;
-	switch(h->init.type_array[h->trig_ch])
+	switch(h->init.ch_info_array[h->trig_ch].type)
 	{
 	case WAVECAPTURE_TYPE_FLOAT:
 		pole_now = *(float*)ptr_now > h->trig_level_f;
@@ -165,14 +144,14 @@ void WaveCapture_Sampling(WaveCapture_t *h)
 
 	for(int ch = 0; ch < h->init.channel_num; ch++)
 	{
-		void* dest_ptr = h->wavedata[ch] + h->cursor * get_bytes(h->init.type_array[ch]);
-		switch(h->init.type_array[ch])
+		void* dest_ptr = h->wavedata[ch] + h->cursor * get_bytes(h->init.ch_info_array[ch].type);
+		switch(h->init.ch_info_array[ch].type)
 		{
 		case WAVECAPTURE_TYPE_FLOAT:
-			*((float*)dest_ptr) = *(float*)(h->init.var_ptr_array[ch]);
+			*((float*)dest_ptr) = *(float*)(h->init.ch_info_array[ch].var_ptr);
 			break;
 		case WAVECAPTURE_TYPE_INT32:
-			*((int32_t*)dest_ptr) = *(int32_t*)(h->init.var_ptr_array[ch]);
+			*((int32_t*)dest_ptr) = *(int32_t*)(h->init.ch_info_array[ch].var_ptr);
 			break;
 		}
 	}
@@ -300,7 +279,7 @@ int WaveCapture_Get_WaveForm(WaveCapture_t *h)
 
 	for(int ch = 0; ch < h->init.channel_num; ch++)
 	{
-		switch(h->init.type_array[ch])
+		switch(h->init.ch_info_array[ch].type)
 		{
 		case WAVECAPTURE_TYPE_FLOAT:
 			for(int i = h->cursor_end+1; i < h->init.sampling_length; i++)
@@ -343,6 +322,50 @@ int WaveCapture_Get_WaveForm(WaveCapture_t *h)
 	return 0;
 }
 
+
+static int WaveCap_printf(WaveCapture_t *h, const char* fmt, ...)
+{
+	char buf[100];
+	int count;
+	va_list arg;
+	va_start(arg, fmt);
+	count = vsprintf(buf, fmt, arg);
+	va_end(arg);
+	h->init.func_write((uint8_t*)buf, strlen(buf));
+	return count;
+}
+
+int WaveCapture_Get_WaveInfo(WaveCapture_t *h)
+{
+	WaveCap_printf(h, "{\r\n");
+	WaveCap_printf(h, "  \"sample_freq\": %f,\r\n", h->init.sampling_freq);
+	WaveCap_printf(h, "  \"sample_len\": %ld,\r\n", h->init.sampling_length);
+	WaveCap_printf(h, "  \"channel_num\": %ld,\r\n", h->init.channel_num);
+
+	WaveCap_printf(h, "  \"channel_name\" : [");
+	for(int i = 0; i < h->init.channel_num; i++)
+	{
+		if(i != 0) WaveCap_printf(h, ", ");
+		WaveCap_printf(h, "\"%s\"", h->init.ch_info_array[i].name);
+	}
+	WaveCap_printf(h, "],\r\n");
+
+	WaveCap_printf(h, "  \"channel_type\" : [");
+	for(int i = 0; i < h->init.channel_num; i++)
+	{
+		if(i != 0) WaveCap_printf(h, ", ");
+		WaveCap_printf(h, "\"%s\"", WaveCapture_TypeName[h->init.ch_info_array[i].type]);
+	}
+	WaveCap_printf(h, "],\r\n");
+
+	WaveCap_printf(h, "  \"decimate\" : %ld\r\n", h->decimate);
+
+	WaveCap_printf(h, "}\r\n");
+
+	return 0;
+}
+
+
 int WaveCapture_Set_Timeout(WaveCapture_t *h, uint32_t timeout)
 {
 	h->timeout = timeout;
@@ -352,8 +375,6 @@ int WaveCapture_Set_Timeout(WaveCapture_t *h, uint32_t timeout)
 
 void WaveCapture_Dispose(WaveCapture_t *h)
 {
-	free(h->init.type_array);
-	free(h->init.var_ptr_array);
 	for(int ch = 0; ch < h->init.channel_num; ch++)
 	{
 		free(h->wavedata[ch]);

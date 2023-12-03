@@ -506,6 +506,17 @@ static int usrcmd_wavecap(int argc, char **argv)
 			uart_puts("OK\r\n");
 			return 0;
 		}
+		else if(ntlibc_strcmp(argv[2], "info") == 0)
+		{
+			int rtn = WaveCapture_Get_WaveInfo(&wavecap);
+			if(rtn != 0)
+			{
+				uart_puts("ERROR\r\n");
+				return -1;
+			}
+			uart_puts("OK\r\n");
+			return 0;
+		}
 		uart_puts("Unknown sub command found\r\n");
 		return -1;
 	}

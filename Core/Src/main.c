@@ -232,36 +232,23 @@ int main(void)
 
   	printf("Hello World\n");
 
-  	WaveCapture_Type_e wavecap_type[] = {
-			WAVECAPTURE_TYPE_FLOAT,
-			WAVECAPTURE_TYPE_FLOAT,
-			WAVECAPTURE_TYPE_FLOAT,
-			WAVECAPTURE_TYPE_FLOAT,
-  	};
-  	void* wavecap_var_ptr_array[] = {
-  			&(wave_data[0]),
-			&(wave_data[1]),
-			&(wave_data[2]),
-			&(wave_data[3]),
+  	WaveCapture_Init_ChannelInfo_t wave_ch_init[] = {
+  			{"Channel_1", WAVECAPTURE_TYPE_FLOAT, &(wave_data[0])},
+  			{"Channel_2", WAVECAPTURE_TYPE_FLOAT, &(wave_data[1])},
+  			{"Channel_3", WAVECAPTURE_TYPE_FLOAT, &(wave_data[2])},
+  			{"Channel_4", WAVECAPTURE_TYPE_FLOAT, &(wave_data[3])},
   	};
   	WaveCapture_Init_t wave_init;
   	wave_init.channel_num = 4;
   	wave_init.func_write = wave_tx_func;
   	wave_init.sampling_length = 1024;
-  	wave_init.type_array = wavecap_type;
-  	wave_init.var_ptr_array = wavecap_var_ptr_array;
+  	wave_init.sampling_freq = 10000;
+  	wave_init.ch_info_array = wave_ch_init;
   	int rtn = WaveCapture_Init(&wavecap, &wave_init);
   	printf("return = %d\n", rtn);
 
-
-  	printf("type[0] = %d\n", wavecap.init.type_array[0]);
-  	printf("type[1] = %d\n", wavecap.init.type_array[1]);
-  	printf("type[2] = %d\n", wavecap.init.type_array[2]);
-  	printf("type[3] = %d\n", wavecap.init.type_array[3]);
   	printf("sizeof(WaveCapture_Type_e) = %d\n", sizeof(WaveCapture_Type_e));
   	printf("sizeof(void*) = %d\n", sizeof(void*));
-  	printf("type_array size = %d\n", malloc_usable_size(wavecap.init.type_array));
-  	printf("var_ptr_array size = %d\n", malloc_usable_size(wavecap.init.var_ptr_array));
   	printf("wavedata size = %d\n", malloc_usable_size(wavecap.wavedata));
   	printf("wavedata[0] size = %d\n", malloc_usable_size(wavecap.wavedata[0]));
   	printf("wavedata_length = %d\n", wavecap.init.sampling_length);
