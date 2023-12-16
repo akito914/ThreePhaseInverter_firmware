@@ -62,10 +62,8 @@ ntshell_t nts;
 WaveCapture_t wavecap;
 
 
-float wave_data[4] = {0};
-int32_t wave_data_i[4] = {0};
+uint16_t ad_arr[4];
 
-int test_counter = 0;
 
 
 /* USER CODE END PV */
@@ -122,6 +120,7 @@ void get_adc(uint16_t* ad_arr)
 	{
 	  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_RESET);
 
+	  for(int w = 0; w < 10; w++){}
 
 	  uint32_t GB;
 	  uint16_t D, DH, DL;
@@ -133,9 +132,10 @@ void get_adc(uint16_t* ad_arr)
 
 	  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
 
+	  for(int w = 0; w < 10; w++){}
 	}
 
-	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_SET);
 
 }
 
@@ -153,7 +153,6 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 
 	if(htim->Instance == TIM8 && __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim8))
 	{
-		uint16_t ad_arr[4];
 
 		get_adc(ad_arr);
 
@@ -165,25 +164,19 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 			phase -= 2*M_PI;
 		}
 
-		amp_u = 0.9 * cosf(phase);
-		amp_v = 0.9 * cosf(phase - M_PI*2/3.0f);
-		amp_w = 0.9 * cosf(phase + M_PI*2/3.0f);
+		amp_u = 0.85 * cosf(phase);
+		amp_v = 0.85 * cosf(phase - M_PI*2/3.0f);
+		amp_w = 0.85 * cosf(phase + M_PI*2/3.0f);
 
-		amp_u = 0.95;
-		amp_v = 0.5;
-		amp_w = 0;
+		amp_u = amp_v;
+		amp_v = amp_v;
+		amp_w = amp_v;
 
 		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + amp_u));
 		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + amp_v));
 		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 + amp_w));
 
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-
-		wave_data[0] = ad_arr[0]/4096.0f * 5.0f;
-		wave_data[1] = ad_arr[1]/4096.0f * 5.0f;
-		wave_data[2] = ad_arr[2]/4096.0f * 5.0f;
-		wave_data[3] = ad_arr[3]/4096.0f * 5.0f;
 
 		WaveCapture_Sampling(&wavecap);
 
@@ -233,13 +226,17 @@ int main(void)
   	printf("Hello World\n");
 
   	WaveCapture_Init_ChannelInfo_t wave_ch_init[] = {
-  			{"Channel_1", WAVECAPTURE_TYPE_FLOAT, &(wave_data[0])},
-  			{"Channel_2", WAVECAPTURE_TYPE_FLOAT, &(wave_data[1])},
-  			{"Channel_3", WAVECAPTURE_TYPE_FLOAT, &(wave_data[2])},
-  			{"Channel_4", WAVECAPTURE_TYPE_FLOAT, &(wave_data[3])},
+  			{"ad_0", WAVECAPTURE_TYPE_INT16, &(ad_arr[0])},
+  			{"ad_1", WAVECAPTURE_TYPE_INT16, &(ad_arr[1])},
+  			{"ad_2", WAVECAPTURE_TYPE_INT16, &(ad_arr[2])},
+  			{"ad_3", WAVECAPTURE_TYPE_INT16, &(ad_arr[3])},
+  			{"amp_u", WAVECAPTURE_TYPE_FLOAT, &(amp_u)},
+  			{"amp_v", WAVECAPTURE_TYPE_FLOAT, &(amp_v)},
+  			{"amp_w", WAVECAPTURE_TYPE_FLOAT, &(amp_w)},
   	};
   	WaveCapture_Init_t wave_init;
-  	wave_init.channel_num = 4;
+//  	wave_init.channel_num = 4;
+  	wave_init.channel_num = sizeof(wave_ch_init) / sizeof(WaveCapture_Init_ChannelInfo_t);
   	wave_init.func_write = wave_tx_func;
   	wave_init.sampling_length = 1024;
   	wave_init.sampling_freq = 10000;
@@ -247,6 +244,7 @@ int main(void)
   	int rtn = WaveCapture_Init(&wavecap, &wave_init);
   	printf("return = %d\n", rtn);
 
+  	printf("channel_num = %d\n", wave_init.channel_num);
   	printf("sizeof(WaveCapture_Type_e) = %d\n", sizeof(WaveCapture_Type_e));
   	printf("sizeof(void*) = %d\n", sizeof(void*));
   	printf("wavedata size = %d\n", malloc_usable_size(wavecap.wavedata));
@@ -257,13 +255,13 @@ int main(void)
 
 
 
-//	HAL_Delay(1000);
-//
-//	HAL_GPIO_WritePin(MC_GPIO_Port, MC_Pin, GPIO_PIN_SET);
-//
-//	HAL_Delay(1000);
-//
-//	HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
+	HAL_Delay(1000);
+
+	HAL_GPIO_WritePin(MC_GPIO_Port, MC_Pin, GPIO_PIN_SET);
+
+	HAL_Delay(1000);
+
+	HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
 
 
 
