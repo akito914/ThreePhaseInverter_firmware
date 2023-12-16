@@ -14,6 +14,7 @@ typedef enum
 {
 	WAVECAPTURE_TYPE_FLOAT = 0,
 	WAVECAPTURE_TYPE_INT32 = 1,
+	WAVECAPTURE_TYPE_INT16 = 2,
 }WaveCapture_Type_e;
 
 typedef enum

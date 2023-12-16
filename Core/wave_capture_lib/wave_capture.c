@@ -9,7 +9,7 @@
 #include <stdarg.h>
 
 
-const char* WaveCapture_TypeName[] = {"Float", "Int32"};
+const char* WaveCapture_TypeName[] = {"Float", "Int32", "Int16"};
 
 
 static int get_bytes(WaveCapture_Type_e type)
@@ -20,6 +20,8 @@ static int get_bytes(WaveCapture_Type_e type)
 		return 4;
 	case WAVECAPTURE_TYPE_INT32:
 		return 4;
+	case WAVECAPTURE_TYPE_INT16:
+		return 2;
 	}
 	return 0;
 }
@@ -110,6 +112,10 @@ static int detect_trigger(WaveCapture_t *h)
 		pole_now = *(int32_t*)ptr_now > h->trig_level_i;
 		pole_prev = *(int32_t*)ptr_prev > h->trig_level_i;
 		break;
+	case WAVECAPTURE_TYPE_INT16:
+			pole_now = *(int16_t*)ptr_now > h->trig_level_i;
+			pole_prev = *(int16_t*)ptr_prev > h->trig_level_i;
+			break;
 	}
 
 	if(h->trig_slope == WAVECAPTURE_TRIG_SLOPE_RISE)
@@ -165,6 +171,9 @@ void WaveCapture_Sampling(WaveCapture_t *h)
 			break;
 		case WAVECAPTURE_TYPE_INT32:
 			*((int32_t*)dest_ptr) = *(int32_t*)(h->init.ch_info_array[ch].var_ptr);
+			break;
+		case WAVECAPTURE_TYPE_INT16:
+			*((int16_t*)dest_ptr) = *(int16_t*)(h->init.ch_info_array[ch].var_ptr);
 			break;
 		}
 	}
@@ -324,6 +333,20 @@ int WaveCapture_Get_WaveForm(WaveCapture_t *h)
 				int32_t val = ((int32_t*)(h->wavedata[ch]))[i];
 				WaveCap_printf(h, ", ");
 				WaveCap_printf(h, "%ld", val);
+			}
+			break;
+		case WAVECAPTURE_TYPE_INT16:
+			for(int i = h->cursor_end+1; i < h->init.sampling_length; i++)
+			{
+				int16_t val = ((int16_t*)(h->wavedata[ch]))[i];
+				if(i != h->cursor_end+1) WaveCap_printf(h, ", ");
+				WaveCap_printf(h, "%d", val);
+			}
+			for(int i = 0; i <= h->cursor_end; i++)
+			{
+				int16_t val = ((int16_t*)(h->wavedata[ch]))[i];
+				WaveCap_printf(h, ", ");
+				WaveCap_printf(h, "%d", val);
 			}
 			break;
 		}
