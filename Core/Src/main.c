@@ -31,6 +31,10 @@
 
 #include "wave_capture.h"
 
+
+#include "motor_control.h"
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,8 +65,7 @@ ntshell_t nts;
 
 WaveCapture_t wavecap;
 
-
-uint16_t ad_arr[4];
+MotorControl_t motorControl;
 
 
 
@@ -107,79 +110,18 @@ int wave_tx_func(const uint8_t *buf, int length)
 /* USER CODE BEGIN 0 */
 
 
-
-void get_adc(uint16_t* ad_arr)
-{
-
-	while(HAL_GPIO_ReadPin(nEOLC_GPIO_Port, nEOLC_Pin) == GPIO_PIN_SET){}
-
-	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
-
-
-	for(int ch = 0; ch < 4; ch++)
-	{
-	  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_RESET);
-
-	  for(int w = 0; w < 10; w++){}
-
-	  uint32_t GB;
-	  uint16_t D, DH, DL;
-	  GB = GPIOB->IDR;
-	  DL = (GB >> 2) & 0x000001FF;
-	  DH = (GB >> 12) & 0x00000007;
-	  D = (DH << 9) | DL;
-	  ad_arr[ch] = D;
-
-	  HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
-
-	  for(int w = 0; w < 10; w++){}
-	}
-
-	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_SET);
-
-}
-
-
-
-
-float omega = 377;
-float phase = 0.0f;
-float amp_u = 0;
-float amp_v = 0;
-float amp_w = 0;
-
 void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 {
 
 	if(htim->Instance == TIM8 && __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim8))
 	{
 
-		get_adc(ad_arr);
+		MotorControl_Update(&motorControl);
 
-
-
-		phase += omega * 100E-6;
-		if(phase > M_PI)
-		{
-			phase -= 2*M_PI;
-		}
-
-		amp_u = 0.85 * cosf(phase);
-		amp_v = 0.85 * cosf(phase - M_PI*2/3.0f);
-		amp_w = 0.85 * cosf(phase + M_PI*2/3.0f);
-
-		amp_u = amp_v;
-		amp_v = amp_v;
-		amp_w = amp_v;
-
-		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + amp_u));
-		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + amp_v));
-		__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 + amp_w));
 
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
 		WaveCapture_Sampling(&wavecap);
-
 
 	}
 
@@ -226,109 +168,34 @@ int main(void)
   	printf("Hello World\n");
 
   	WaveCapture_Init_ChannelInfo_t wave_ch_init[] = {
-  			{"ad_0", WAVECAPTURE_TYPE_INT16, &(ad_arr[0])},
-  			{"ad_1", WAVECAPTURE_TYPE_INT16, &(ad_arr[1])},
-  			{"ad_2", WAVECAPTURE_TYPE_INT16, &(ad_arr[2])},
-  			{"ad_3", WAVECAPTURE_TYPE_INT16, &(ad_arr[3])},
-  			{"amp_u", WAVECAPTURE_TYPE_FLOAT, &(amp_u)},
-  			{"amp_v", WAVECAPTURE_TYPE_FLOAT, &(amp_v)},
-  			{"amp_w", WAVECAPTURE_TYPE_FLOAT, &(amp_w)},
+  			{"ad_0", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[0])},
+  			{"ad_1", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[1])},
+  			{"ad_2", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[2])},
+  			{"ad_3", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[3])},
+  			{"amp_u", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_u)},
+  			{"amp_v", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_v)},
+  			{"amp_w", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_w)},
+  			{"Iu", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iu)},
+  			{"Iv", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iv)},
+  			{"Iw", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iw)},
+  			{"Vdc", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Vdc)},
   	};
   	WaveCapture_Init_t wave_init;
-//  	wave_init.channel_num = 4;
   	wave_init.channel_num = sizeof(wave_ch_init) / sizeof(WaveCapture_Init_ChannelInfo_t);
   	wave_init.func_write = wave_tx_func;
   	wave_init.sampling_length = 1024;
   	wave_init.sampling_freq = 10000;
   	wave_init.ch_info_array = wave_ch_init;
   	int rtn = WaveCapture_Init(&wavecap, &wave_init);
-  	printf("return = %d\n", rtn);
-
-  	printf("channel_num = %d\n", wave_init.channel_num);
-  	printf("sizeof(WaveCapture_Type_e) = %d\n", sizeof(WaveCapture_Type_e));
-  	printf("sizeof(void*) = %d\n", sizeof(void*));
-  	printf("wavedata size = %d\n", malloc_usable_size(wavecap.wavedata));
-  	printf("wavedata[0] size = %d\n", malloc_usable_size(wavecap.wavedata[0]));
-  	printf("wavedata_length = %d\n", wavecap.init.sampling_length);
+  	if(rtn != 0)
+  	{
+  		printf("WaveCap Error !!\r\n");
+  		Error_Handler();
+  	}
 
 
 
-
-
-	HAL_Delay(1000);
-
-	HAL_GPIO_WritePin(MC_GPIO_Port, MC_Pin, GPIO_PIN_SET);
-
-	HAL_Delay(1000);
-
-	HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
-
-
-
-	HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_1);
-
-
-	__HAL_TIM_CLEAR_FLAG(&htim8, TIM_FLAG_UPDATE);
-	__HAL_TIM_ENABLE_IT(&htim8, TIM_IT_UPDATE);
-
-	HAL_TIM_GenerateEvent(&htim8, TIM_EVENTSOURCE_UPDATE);
-
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + 0));
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + 0));
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 - 0));
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_4, htim8.Init.Period / 2 * (1 - 0.9));
-
-	HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_2);
-	HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_3);
-	HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_4);
-
-	HAL_TIMEx_PWMN_Start_IT(&htim8, TIM_CHANNEL_1);
-	HAL_TIMEx_PWMN_Start_IT(&htim8, TIM_CHANNEL_2);
-	HAL_TIMEx_PWMN_Start_IT(&htim8, TIM_CHANNEL_3);
-
-
-
-	// ADC Setting
-
-	// Initialize
-  	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_SET);
-  	HAL_GPIO_WritePin(nRD_GPIO_Port, nRD_Pin, GPIO_PIN_SET);
-  	HAL_GPIO_WritePin(nWR_GPIO_Port, nWR_Pin, GPIO_PIN_SET);
-  	HAL_GPIO_WritePin(CONVST_GPIO_Port, CONVST_Pin, GPIO_PIN_SET);
-
-  	// Write mode
-  	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_RESET);
-  	HAL_GPIO_WritePin(nWR_GPIO_Port, nWR_Pin, GPIO_PIN_RESET);
-
-  	// Set GPIO as output port
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-	GPIO_InitStruct.Pin = D0_Pin|D1_Pin|D2_Pin|D3_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	// channel activation
-  	HAL_GPIO_WritePin(D0_GPIO_Port, D0_Pin, GPIO_PIN_SET);
-  	HAL_GPIO_WritePin(D1_GPIO_Port, D1_Pin, GPIO_PIN_SET);
-  	HAL_GPIO_WritePin(D2_GPIO_Port, D2_Pin, GPIO_PIN_SET);
-  	HAL_GPIO_WritePin(D3_GPIO_Port, D3_Pin, GPIO_PIN_SET);
-
-  	// Write
-  	HAL_GPIO_WritePin(nWR_GPIO_Port, nWR_Pin, GPIO_PIN_SET);
-  	HAL_Delay(1);
-  	HAL_GPIO_WritePin(nCS_GPIO_Port, nCS_Pin, GPIO_PIN_SET);
-
-  	// Set GPIO as input port
-	GPIO_InitStruct.Pin = D0_Pin|D8_Pin|D9_Pin|D10_Pin
-						  |D11_Pin|nEOC_Pin|D1_Pin|D2_Pin
-						  |D3_Pin|D4_Pin|D5_Pin|D6_Pin
-						  |D7_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-
+	MotorControl_Init(&motorControl);
 
 
   	ntshell_usr_init(&nts);
