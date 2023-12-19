@@ -119,8 +119,6 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim)
 		MotorControl_Update(&motorControl);
 
 
-		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
 		WaveCapture_Sampling(&wavecap);
 
 	}

@@ -8,9 +8,18 @@
 #include "sensor_board.h"
 
 
+typedef enum
+{
+	MODE_V_UVW,
+	MODE_VF,
+}MotorControl_Mode_e;
+
+
 typedef struct
 {
+	float Ts;
 	float V_f_rate;
+	float vf_inc_rate; // [Hz / s]
 }MotorControl_Init_t;
 
 
@@ -20,7 +29,11 @@ typedef struct
 	SensorBoard_t sensor;
 	float Vu_ref, Vv_ref, Vw_ref;
 	float amp_u, amp_v, amp_w;
-	float phase;
+	float vf_phase;
+	float vf_freq_ref;
+	float vf_freq;
+	float vf_volt;
+	MotorControl_Mode_e mode;
 }MotorControl_t;
 
 

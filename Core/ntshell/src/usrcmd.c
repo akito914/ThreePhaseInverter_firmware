@@ -43,10 +43,13 @@
 
 #include "wave_capture.h"
 
+#include "motor_control.h"
+
 extern UART_HandleTypeDef huart2;
 
 extern WaveCapture_t wavecap;
 
+extern MotorControl_t motorControl;
 
 #define UartHandler (huart2)
 
@@ -75,6 +78,7 @@ static int usrcmd_help(int argc, char **argv);
 static int usrcmd_info(int argc, char **argv);
 static int usrcmd_test(int argc, char **argv);
 static int usrcmd_wavecap(int argc, char **argv);
+static int usrcmd_motor(int argc, char **argv);
 
 typedef struct {
     char *cmd;
@@ -88,6 +92,7 @@ static const cmd_table_t cmdlist[] = {
     { "info", "This is a description text string for info command.", usrcmd_info },
     { "test", "This is a description text string for info command.", usrcmd_test },
     { "wavecap", "This is a description text string for info command.", usrcmd_wavecap },
+    { "motor", "This is a description text string for info command.", usrcmd_motor },
 };
 #pragma GCC diagnostic warning "-Wwrite-strings"
 
@@ -170,9 +175,30 @@ void uart_putc(char c)
 
 static char ntshell_serial_getc_timeout(int timeout_ms)
 {
-	char c;
+	char c = 0;
+	uint32_t tickstart = HAL_GetTick();
 
-	HAL_UART_Receive(&UartHandler, (uint8_t*)(&c), 1, timeout_ms);
+	while((HAL_GetTick() - tickstart) < timeout_ms)
+	{
+		int next_idx = UART_BUF_LENGTH - __HAL_DMA_GET_COUNTER(UartHandler.hdmarx);
+		int new_data_length = next_idx - uart_rx_cursor;
+		if(new_data_length < 0)
+		{
+			new_data_length += UART_BUF_LENGTH;
+		}
+
+		if(new_data_length > 0)
+		{
+			c = uart_rx_buf[uart_rx_cursor];
+			uart_rx_cursor++;
+			if(uart_rx_cursor >= UART_BUF_LENGTH)
+			{
+				uart_rx_cursor = 0;
+			}
+			break;
+		}
+
+	}
 
 	return c;
 }
@@ -535,6 +561,55 @@ static int usrcmd_wavecap(int argc, char **argv)
 	uart_puts("Unknown sub command found\r\n");
 	return -1;
 }
+
+
+
+
+static int usrcmd_motor(int argc, char **argv)
+{
+	if (argc < 2)
+	{
+		uart_puts("motor vf\r\n");
+		return -1;
+	}
+	if (ntlibc_strcmp(argv[1], "vf") == 0)
+	{
+
+		motorControl.mode = MODE_VF;
+
+		while(1)
+		{
+			HAL_Delay(100);
+
+			char c = ntshell_serial_getc_timeout(1);
+			if(c == 0x03)
+			{
+				puts("\r\n^C\r\n");
+				break;
+			}
+			else if(c == 0x31)
+			{
+				motorControl.vf_freq_ref += 10;
+			}
+			else if(c == 0x32)
+			{
+				motorControl.vf_freq_ref -= 10;
+			}
+
+			printf("freq_cmd = %f\r\n", motorControl.vf_freq_ref);
+			printf("freq     = %f\r\n", motorControl.vf_freq);
+			printf("voltage  = %f\r\n", motorControl.vf_volt * sqrt(3.0f/2));
+			printf("Vdc      = %f\r\n", motorControl.sensor.Vdc);
+
+			uart_puts("\e[5A");
+		}
+
+		motorControl.vf_freq_ref = 0.0;
+
+	}
+}
+
+
 
 
 
