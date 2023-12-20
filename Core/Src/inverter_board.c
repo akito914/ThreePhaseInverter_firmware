@@ -25,6 +25,8 @@ void InverterBoard_Init()
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 - 0));
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_4, htim8.Init.Period / 2 * (1 - 0.9));
 
+	HAL_TIM_Base_Start(&htim8);
+
 	HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_2);
 	HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_3);
@@ -34,16 +36,16 @@ void InverterBoard_Init()
 	HAL_TIMEx_PWMN_Start_IT(&htim8, TIM_CHANNEL_2);
 	HAL_TIMEx_PWMN_Start_IT(&htim8, TIM_CHANNEL_3);
 
-}
 
+}
 
 
 void InverterBoard_setPWM(float amp_u, float amp_v, float amp_w, float amp_br)
 {
 
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + amp_u));
+	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 + amp_u));
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + amp_v));
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 + amp_w));
+	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + amp_w));
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_4, htim8.Init.Period / 2 * (1 + amp_br));
 
 }

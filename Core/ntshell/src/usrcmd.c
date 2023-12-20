@@ -51,6 +51,8 @@ extern WaveCapture_t wavecap;
 
 extern MotorControl_t motorControl;
 
+extern TIM_HandleTypeDef htim8;
+
 #define UartHandler (huart2)
 
 #define uart_puts(str) puts(str)
@@ -607,6 +609,60 @@ static int usrcmd_motor(int argc, char **argv)
 		motorControl.vf_freq_ref = 0.0;
 
 	}
+	else if(ntlibc_strcmp(argv[1], "ident-r") == 0)
+	{
+		motorControl.Vu_ref = 0.0f;
+		motorControl.Vv_ref = 0.0f;
+		motorControl.Vw_ref = 0.0f;
+		motorControl.mode = MODE_V_UVW;
+
+		// Shutdown
+		HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_RESET);
+
+		HAL_TIM_PWM_Stop_IT(&htim8, TIM_CHANNEL_1);
+		HAL_TIMEx_PWMN_Stop_IT(&htim8, TIM_CHANNEL_1);
+
+		// Release shutdown
+		HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
+
+		float Vp = 0.0f;
+		float Vu, Vv, Vw, Iu, Iv, Iw;
+		for(Vp = 0.0; Vp <= 20.0f; Vp += 0.5f)
+		{
+			Vu = Vp;
+			Vv = -Vp;
+			Vw = 0;
+			Iu = motorControl.sensor.Iu;
+			Iv = motorControl.sensor.Iv;
+			Iw = motorControl.sensor.Iw;
+			motorControl.Vu_ref = Vu;
+			motorControl.Vv_ref = Vv;
+			motorControl.Vw_ref = 0;
+			HAL_Delay(200);
+			printf("%f, %f, %f, %f\r\n", Vu, Vv, Iu, Iv);
+			if((Iu - Iv) / 2 > 1.5f)
+			{
+				break;
+			}
+			if(checkSuspens()) break;
+		}
+
+		motorControl.Vu_ref = 0.0f;
+		motorControl.Vv_ref = 0.0f;
+		motorControl.Vw_ref = 0.0f;
+
+		// Shutdown
+		HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_RESET);
+
+		HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_1);
+		HAL_TIMEx_PWMN_Start_IT(&htim8, TIM_CHANNEL_1);
+
+		// Release shutdown
+		HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
+
+	}
+
+
 }
 
 
