@@ -51,6 +51,7 @@ extern WaveCapture_t wavecap;
 
 extern MotorControl_t motorControl;
 
+extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim8;
 
 #define UartHandler (huart2)
@@ -284,12 +285,13 @@ static int usrcmd_test(int argc, char **argv)
 	int counter = 0;
 	while(1)
 	{
-		HAL_Delay(200);
+		HAL_Delay(50);
 		if(checkSuspens() != 0)
 		{
 			return 0;
 		}
-		printf("test : counter = %d\n", counter);
+//		printf("test : counter = %d\n", counter);
+		printf("enc = %d\n", htim1.Instance->CNT);
 		counter += 1;
 	}
     return -1;
