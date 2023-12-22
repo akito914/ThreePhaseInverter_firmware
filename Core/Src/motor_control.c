@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdio.h>
 
+extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim8;
 
@@ -49,6 +50,16 @@ void MotorControl_Init(MotorControl_t *h)
 	h->init.V_f_rate = 200 / 60.0f;
 	h->init.vf_inc_rate = 10.0f;
 
+	h->enc_count = 0;
+	h->enc_count_prev = 0;
+	h->first_sample = 1;
+	h->enc_MAF_cursor = 0;
+	h->enc_diff_MAF_sum = 0;
+	for(int i = 0; i < ENC_MAF_SIZE; i++)
+	{
+		h->enc_diff_MAF_buf[i] = 0;
+	}
+
 	h->init.Ts = 100E-6;
 
 	InverterBoard_Init();
@@ -68,6 +79,25 @@ void MotorControl_Update(MotorControl_t *h)
 	if(scale == 0) HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
 	SensorBoard_Update(&h->sensor);
+
+	// Encoder Update
+	h->enc_count = htim1.Instance->CNT;
+	h->enc_diff = h->enc_count - h->enc_count_prev;
+	h->enc_count_prev = h->enc_count;
+	if(h->first_sample == 1)
+	{
+		h->enc_diff = 0;
+		h->first_sample = 0;
+	}
+	h->enc_diff_MAF_sum -= h->enc_diff_MAF_buf[h->enc_MAF_cursor];
+	h->enc_diff_MAF_sum += h->enc_diff;
+	h->enc_diff_MAF_buf[h->enc_MAF_cursor] = h->enc_diff;
+	h->enc_MAF_cursor++;
+	if(h->enc_MAF_cursor >= ENC_MAF_SIZE)
+	{
+		h->enc_MAF_cursor = 0;
+	}
+	h->omega_m = h->enc_diff_MAF_sum * 2 * M_PI / 8192 / h->init.Ts / ENC_MAF_SIZE;
 
 
 //	MotorControl_Update_VF_Control(h);

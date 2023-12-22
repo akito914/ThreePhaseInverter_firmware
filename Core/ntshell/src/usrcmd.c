@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "main.h"
 
@@ -603,9 +604,11 @@ static int usrcmd_motor(int argc, char **argv)
 			printf("freq_cmd = %f\r\n", motorControl.vf_freq_ref);
 			printf("freq     = %f\r\n", motorControl.vf_freq);
 			printf("voltage  = %f\r\n", motorControl.vf_volt * sqrt(3.0f/2));
+			printf("N[rpm]  = %f\r\n", motorControl.omega_m / (2*M_PI) * 60);
+			printf("Slip[%]  = %f\r\n", (motorControl.vf_freq - motorControl.omega_m / (2*M_PI) * 2) / motorControl.vf_freq * 100);
 			printf("Vdc      = %f\r\n", motorControl.sensor.Vdc);
 
-			uart_puts("\e[5A");
+			uart_puts("\e[7A");
 		}
 
 		motorControl.vf_freq_ref = 0.0;

@@ -8,6 +8,10 @@
 #include "sensor_board.h"
 
 
+#define ENC_MAF_SIZE 1024
+
+
+
 typedef enum
 {
 	MODE_V_UVW,
@@ -34,6 +38,14 @@ typedef struct
 	float vf_freq;
 	float vf_volt;
 	MotorControl_Mode_e mode;
+	uint16_t enc_count;
+	uint16_t enc_count_prev;
+	int16_t enc_diff;
+	int32_t enc_diff_MAF_buf[ENC_MAF_SIZE];
+	int32_t enc_diff_MAF_sum;
+	int32_t enc_MAF_cursor;
+	int first_sample;
+	float omega_m;
 }MotorControl_t;
 
 
