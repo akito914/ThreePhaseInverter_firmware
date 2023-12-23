@@ -59,6 +59,7 @@ int WaveCapture_Init(WaveCapture_t *h, WaveCapture_Init_t *init)
 	h->cursor_end = 0;
 	h->timeout = 1024;
 	h->timeout_count = 0;
+	h->presample_count = 0;
 
 	// Set configuration data
 	h->init.func_write = init->func_write;
@@ -141,6 +142,21 @@ static int timeout_check(WaveCapture_t *h)
 	{
 		return 1;
 	}
+	if(h->trig_mode == WAVECAPTURE_MODE_AUTO)
+	{
+		h->timeout_count++;
+	}
+	return 0;
+}
+
+
+static int presample_ended(WaveCapture_t *h)
+{
+	if(h->presample_count > h->init.sampling_length / 2 - h->trig_pos)
+	{
+		return 1;
+	}
+	h->presample_count++;
 	return 0;
 }
 
@@ -184,7 +200,7 @@ void WaveCapture_Sampling(WaveCapture_t *h)
 	case WAVECAPTURE_SAMPLE_FREERUN:
 		break;
 	case WAVECAPTURE_SAMPLE_TOTRIG:
-		if(detect_trigger(h) || timeout_check(h))
+		if(presample_ended(h) && (detect_trigger(h) || timeout_check(h)))
 		{
 			h->cursor_trig = h->cursor;
 			uint32_t end = h->cursor_trig + h->init.sampling_length / 2 - h->trig_pos;
@@ -194,14 +210,8 @@ void WaveCapture_Sampling(WaveCapture_t *h)
 			}
 			h->cursor_end = end;
 			h->timeout_count = 0;
+			h->presample_count = 0;
 			h->status = WAVECAPTURE_SAMPLE_TOEND;
-		}
-		else
-		{
-			if(h->trig_mode == WAVECAPTURE_MODE_AUTO)
-			{
-				h->timeout_count++;
-			}
 		}
 		break;
 	case WAVECAPTURE_SAMPLE_TOEND:

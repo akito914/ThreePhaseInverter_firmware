@@ -72,6 +72,7 @@ typedef struct
 	uint32_t cursor_end;
 	uint32_t timeout;
 	uint32_t timeout_count;
+	uint32_t presample_count;
 	uint32_t decimate_counter;
 	WaveCapture_SamplingStatus_e status;
 }WaveCapture_t;
