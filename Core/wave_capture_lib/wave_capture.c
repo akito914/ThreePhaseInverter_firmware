@@ -395,7 +395,8 @@ int WaveCapture_Get_WaveInfo(WaveCapture_t *h)
 	}
 	WaveCap_printf(h, "],\r\n");
 
-	WaveCap_printf(h, "  \"decimate\" : %ld\r\n", h->decimate);
+	WaveCap_printf(h, "  \"decimate\" : %ld,\r\n", h->decimate);
+	WaveCap_printf(h, "  \"trigpos\" : %ld\r\n", h->trig_pos);
 
 	WaveCap_printf(h, "}\r\n");
 
