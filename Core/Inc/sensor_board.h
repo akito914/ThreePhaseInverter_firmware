@@ -32,7 +32,7 @@ void SensorBoard_Init(SensorBoard_t *h);
 
 void SensorBoard_GetADC(SensorBoard_t *h, uint16_t* ad_arr);
 
-void SensorBoard_Update(SensorBoard_t *h);
+void SensorBoard_Update(SensorBoard_t *h, int sector);
 
 
 #endif /* _SENSOR_BOARD_H_ */

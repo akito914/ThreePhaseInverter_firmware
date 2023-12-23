@@ -91,14 +91,39 @@ void SensorBoard_GetADC(SensorBoard_t *h, uint16_t* ad_arr)
 }
 
 
-void SensorBoard_Update(SensorBoard_t *h)
+void SensorBoard_Update(SensorBoard_t *h, int sector)
 {
+
+	float Iu, Iv, Iw;
 
 	SensorBoard_GetADC(h, h->ad_arr);
 
-	h->Iu = h->ad_arr[0] * h->init.ad2Iuvw_gain - h->init.Iuvw_offset[0];
-	h->Iv = h->ad_arr[1] * h->init.ad2Iuvw_gain - h->init.Iuvw_offset[1];
-	h->Iw = h->ad_arr[2] * h->init.ad2Iuvw_gain - h->init.Iuvw_offset[2];
+	Iu = h->ad_arr[0] * h->init.ad2Iuvw_gain - h->init.Iuvw_offset[0];
+	Iv = h->ad_arr[1] * h->init.ad2Iuvw_gain - h->init.Iuvw_offset[1];
+	Iw = h->ad_arr[2] * h->init.ad2Iuvw_gain - h->init.Iuvw_offset[2];
+
+	switch(sector)
+	{
+	case 6: case 1:
+		h->Iu = - Iv - Iw;
+		h->Iv = Iv;
+		h->Iw = Iw;
+		break;
+	case 2: case 3:
+		h->Iu = Iu;
+		h->Iv = - Iw - Iu;
+		h->Iw = Iw;
+		break;
+	case 4: case 5:
+		h->Iu = Iu;
+		h->Iv = Iv;
+		h->Iw = - Iu - Iv;
+		break;
+	default:
+		h->Iu = Iu;
+		h->Iv = Iv;
+		h->Iw = Iw;
+	}
 
 	h->Vdc = h->ad_arr[3] * h->init.ad2Vdc_gain - h->init.Vdc_offset;
 

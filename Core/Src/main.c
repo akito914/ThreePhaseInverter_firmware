@@ -169,17 +169,22 @@ int main(void)
   	printf("Hello World\n");
 
   	WaveCapture_Init_ChannelInfo_t wave_ch_init[] = {
-  			{"ad_0", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[0])},
-  			{"ad_1", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[1])},
-  			{"ad_2", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[2])},
-  			{"ad_3", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[3])},
+//  			{"ad_0", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[0])},
+//  			{"ad_1", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[1])},
+//  			{"ad_2", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[2])},
+//  			{"ad_3", WAVECAPTURE_TYPE_INT16, &(motorControl.sensor.ad_arr[3])},
   			{"amp_u", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_u)},
   			{"amp_v", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_v)},
   			{"amp_w", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_w)},
+//  			{"Vu_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vu_ref)},
+//  			{"Vv_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vv_ref)},
+//  			{"Vw_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vw_ref)},
   			{"Iu", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iu)},
   			{"Iv", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iv)},
   			{"Iw", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iw)},
   			{"Vdc", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Vdc)},
+//  			{"omega_m", WAVECAPTURE_TYPE_FLOAT, &(motorControl.omega_m)},
+//  			{"enc_diff", WAVECAPTURE_TYPE_INT16, &(motorControl.enc_diff)},
   	};
   	WaveCapture_Init_t wave_init;
   	wave_init.channel_num = sizeof(wave_ch_init) / sizeof(WaveCapture_Init_ChannelInfo_t);
