@@ -49,7 +49,8 @@ void MotorControl_Init(MotorControl_t *h)
 	h->vf_freq = 0.0f;
 	h->vf_freq_ref = 0.0f;
 	h->vf_phase = 0.0f;
-	h->init.V_f_rate = 200 / 60.0f;
+//	h->init.V_f_rate = 200 / 60.0f;
+	h->init.V_f_rate = 30 / 8.33f;
 	h->init.vf_inc_rate = 10.0f;
 
 	h->enc_count = 0;
@@ -79,8 +80,10 @@ void MotorControl_Init(MotorControl_t *h)
 	h->mode = MODE_CT_CAL;
 	while(h->mode == MODE_CT_CAL){}
 
+//	h->mode = MODE_V_UVW;
+
 	h->mode = MODE_VF;
-	h->vf_freq_ref = 50;
+	h->vf_freq_ref = 8.3;
 
 
 }
@@ -112,7 +115,7 @@ void MotorControl_Update(MotorControl_t *h)
 		MotorControl_Update_Vuvw(h);
 		break;
 	case MODE_VF:
-		SensorBoard_Update(&h->sensor, h->sector*0);
+		SensorBoard_Update(&h->sensor, h->sector);
 		MotorControl_Update_VF_Control(h);
 		MotorControl_Update_Vuvw(h);
 		break;

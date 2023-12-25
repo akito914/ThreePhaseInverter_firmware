@@ -176,14 +176,14 @@ int main(void)
   			{"amp_u", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_u)},
   			{"amp_v", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_v)},
   			{"amp_w", WAVECAPTURE_TYPE_FLOAT, &(motorControl.amp_w)},
-//  			{"Vu_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vu_ref)},
-//  			{"Vv_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vv_ref)},
-//  			{"Vw_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vw_ref)},
+  			{"Vu_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vu_ref)},
+  			{"Vv_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vv_ref)},
+  			{"Vw_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vw_ref)},
   			{"Iu", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iu)},
   			{"Iv", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iv)},
   			{"Iw", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iw)},
   			{"Vdc", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Vdc)},
-//  			{"omega_m", WAVECAPTURE_TYPE_FLOAT, &(motorControl.omega_m)},
+  			{"omega_m", WAVECAPTURE_TYPE_FLOAT, &(motorControl.omega_m)},
 //  			{"enc_diff", WAVECAPTURE_TYPE_INT16, &(motorControl.enc_diff)},
   	};
   	WaveCapture_Init_t wave_init;
