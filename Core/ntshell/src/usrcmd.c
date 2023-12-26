@@ -667,6 +667,7 @@ static int usrcmd_motor(int argc, char **argv)
 
 	}
 
+	return 0;
 
 }
 
