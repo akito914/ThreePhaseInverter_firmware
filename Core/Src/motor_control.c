@@ -25,17 +25,17 @@ static void MotorControl_Update_PWM_Test(MotorControl_t *h);
 void MotorControl_Init(MotorControl_t *h)
 {
 
-	h->param.R1 = 9.935037483;
-	h->param.R2 = 14.26647699;
-	h->param.Rc = 4631.526895;
-	h->param.L1 = 0.376217057;
-	h->param.L2 = 0.376217057;
-	h->param.M = 0.352789858;
-	h->param.sigma = 0.120663258;
+	h->param.R1 = 17.95484109;
+	h->param.R2 = 29.45890479;
+	h->param.Rc = 11560.95715;
+	h->param.L1 = 0.750701284;
+	h->param.L2 = 0.750701284;
+	h->param.M = 0.710517547;
+	h->param.sigma = 0.104191255;
 
 
 //	h->init.V_f_rate = 200 / 60.0f;
-	h->init.V_f_rate = 30 / 8.33f;
+	h->init.V_f_rate = 50 / 8.33f;
 	h->init.vf_inc_rate = 10.0f;
 
 	h->init.Ts = 100E-6;
@@ -129,17 +129,21 @@ void MotorControl_Setup(MotorControl_t *h)
 
 //	h->mode = MODE_V_UVW;
 
+
 //	h->mode = MODE_VF;
-//	h->vf_freq_ref = 8.3;
+//	h->vf_freq_ref = 60;
+//
+//	h->mode = MODE_VF;
+//	h->vf_freq_ref = 8.33;
 
 
 
 //	h->Id_ref = 0.1;
 //	h->Iq_ref = 0.2;
-//	h->mode = MODE_FOC;
+	h->mode = MODE_FOC;
 
-	h->vf_freq_ref = 60;
-	h->mode = MODE_PWM_TEST;
+//	h->vf_freq_ref = 60;
+//	h->mode = MODE_PWM_TEST;
 
 
 }
