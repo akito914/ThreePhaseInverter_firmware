@@ -16,6 +16,7 @@
 typedef enum
 {
 	MODE_CT_CAL,
+	MODE_PWM_TEST,
 	MODE_V_UVW,
 	MODE_VF,
 	MODE_FOC,

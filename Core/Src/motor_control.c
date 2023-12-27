@@ -20,6 +20,7 @@ static void MotorControl_Update_FOC(MotorControl_t *h);
 static void MotorControl_Init_ACR(MotorControl_t *h);
 static void MotorControl_Update_ACR(MotorControl_t *h);
 static void MotorControl_Update_TestSig(MotorControl_t *h);
+static void MotorControl_Update_PWM_Test(MotorControl_t *h);
 
 void MotorControl_Init(MotorControl_t *h)
 {
@@ -132,9 +133,13 @@ void MotorControl_Setup(MotorControl_t *h)
 //	h->vf_freq_ref = 8.3;
 
 
-	h->Id_ref = 0.1;
-	h->Iq_ref = 0.2;
-	h->mode = MODE_FOC;
+
+//	h->Id_ref = 0.1;
+//	h->Iq_ref = 0.2;
+//	h->mode = MODE_FOC;
+
+	h->vf_freq_ref = 60;
+	h->mode = MODE_PWM_TEST;
 
 
 }
@@ -162,6 +167,10 @@ void MotorControl_Update(MotorControl_t *h)
 		SensorBoard_Update(&h->sensor, 0);
 		MotorControl_Update_CT_CAL(h);
 		MotorControl_Update_Vuvw(h);
+		break;
+	case MODE_PWM_TEST:
+		SensorBoard_Update(&h->sensor, h->sector);
+		MotorControl_Update_PWM_Test(h);
 		break;
 	case MODE_V_UVW:
 		SensorBoard_Update(&h->sensor, h->sector);
@@ -258,6 +267,50 @@ static int MotorControl_Update_Vuvw(MotorControl_t *h)
 
 }
 
+
+static void MotorControl_Update_PWM_Test(MotorControl_t *h)
+{
+
+	float f_step = h->init.vf_inc_rate * h->init.Ts;
+
+	if(h->vf_freq + f_step < h->vf_freq_ref)
+	{
+		h->vf_freq += f_step;
+	}
+	else if(h->vf_freq - f_step > h->vf_freq_ref)
+	{
+		h->vf_freq -= f_step;
+	}
+	else
+	{
+		h->vf_freq = h->vf_freq_ref;
+	}
+
+	h->vf_volt = h->init.V_f_rate * h->vf_freq * sqrt(2.0/3);
+
+	h->vf_phase += 2 * M_PI * h->vf_freq * h->init.Ts;
+	if(h->vf_phase > M_PI)
+	{
+		h->vf_phase -= 2 * M_PI;
+	}
+	else if(h->vf_phase < -M_PI)
+	{
+		h->vf_phase += 2 * M_PI;
+	}
+
+	h->amp_u = h->init.pwm_duty_lim * cosf(h->vf_phase);
+	h->amp_v = h->init.pwm_duty_lim * cosf(h->vf_phase - M_PI*2/3.0f);
+	h->amp_w = h->init.pwm_duty_lim * cosf(h->vf_phase + M_PI*2/3.0f);
+
+	if(h->amp_u < -1) h->amp_u = -1;
+	if(h->amp_u > 1) h->amp_u = 1;
+	if(h->amp_v < -1) h->amp_v = -1;
+	if(h->amp_v > 1) h->amp_v = 1;
+	if(h->amp_w < -1) h->amp_w = -1;
+	if(h->amp_w > 1) h->amp_w = 1;
+	InverterBoard_setPWM(h->amp_u, h->amp_v, h->amp_w, 0.0);
+
+}
 
 
 static void MotorControl_Update_VF_Control(MotorControl_t *h)

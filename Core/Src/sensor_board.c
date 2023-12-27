@@ -8,7 +8,13 @@
 
 void SensorBoard_Init(SensorBoard_t *h)
 {
-	h->init.ad2Iuvw_gain = 5.0f / 4096.0f * 10.0f / 2.0f;
+
+	float CT_gain_ad_to_voltage = 5.0f / 4096.0f;
+	float CT_IPN = 10.0f;
+	float CT_V_IPN = 2.0f;
+	float CT_turn = 2;
+
+	h->init.ad2Iuvw_gain = CT_gain_ad_to_voltage * CT_IPN / CT_V_IPN / CT_turn;
 	h->init.ad2Vdc_gain = 0.081985f; /* 実測より */
 	h->init.Iuvw_offset[0] = h->init.ad2Iuvw_gain * 2048 + 0.066685823242186484;
 	h->init.Iuvw_offset[1] = h->init.ad2Iuvw_gain * 2048 + 0.0051024550781249975;
