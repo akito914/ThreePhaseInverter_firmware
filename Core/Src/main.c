@@ -183,7 +183,7 @@ int main(void)
 //  			{"Iv", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iv)},
 //  			{"Iw", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Iw)},
   			{"Vdc", WAVECAPTURE_TYPE_FLOAT, &(motorControl.sensor.Vdc)},
-  			{"omega_m", WAVECAPTURE_TYPE_FLOAT, &(motorControl.omega_m)},
+  			{"omega_m", WAVECAPTURE_TYPE_FLOAT, &(motorControl.omega_rm)},
   			{"enc_diff", WAVECAPTURE_TYPE_INT16, &(motorControl.encoder.enc_diff)},
   			{"Id", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Id)},
   			{"Iq", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Iq)},
@@ -192,11 +192,13 @@ int main(void)
 //  			{"Vd_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vd_ref)},
 //  			{"Vq_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.Vq_ref)},
 //  			{"Vdq_lim", WAVECAPTURE_TYPE_FLOAT, &(motorControl.acr.Vdq_lim)},
-  			{"phi2d_est", WAVECAPTURE_TYPE_FLOAT, &(motorControl.phi_2d_est)},
+//  			{"phi2d_est", WAVECAPTURE_TYPE_FLOAT, &(motorControl.phi_2d_est)},
 //  			{"phi2q_est", WAVECAPTURE_TYPE_FLOAT, &(motorControl.phi_2q_est)},
 //  			{"omega_s", WAVECAPTURE_TYPE_FLOAT, &(motorControl.omega_s_ref)},
 //  			{"theta", WAVECAPTURE_TYPE_FLOAT, &(motorControl.theta)},
   			{"omega_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.omega_ref)},
+  			{"theta_rm", WAVECAPTURE_TYPE_FLOAT, &(motorControl.theta_rm)},
+  			{"theta_ref", WAVECAPTURE_TYPE_FLOAT, &(motorControl.theta_ref)},
   	};
   	WaveCapture_Init_t wave_init;
   	wave_init.channel_num = sizeof(wave_ch_init) / sizeof(WaveCapture_Init_ChannelInfo_t);

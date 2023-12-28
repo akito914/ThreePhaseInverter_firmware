@@ -21,6 +21,7 @@ static void MotorControl_Update_CurrentCommand(MotorControl_t *h);
 static void MotorControl_Update_SlipFreq(MotorControl_t *h);
 static void MotorControl_Init_ASR(MotorControl_t *h);
 static void MotorControl_Update_ASR(MotorControl_t *h);
+static void MotorControl_Update_APR(MotorControl_t *h);
 static void MotorControl_Init_ACR(MotorControl_t *h);
 static void MotorControl_Update_ACR(MotorControl_t *h);
 static void MotorControl_Update_TestSig(MotorControl_t *h);
@@ -51,8 +52,10 @@ void MotorControl_Init(MotorControl_t *h)
 	h->init.ct_cal_samples = 1024;
 	h->init.Idq_lim = 2;
 	h->init.pwm_duty_lim = 0.95;
-	h->init.omega_acr = 500;
-	h->init.omega_asr = 50;
+	h->init.omega_acr = 1000;
+	h->init.omega_asr = 100;
+	h->init.omega_apr = 20;
+	h->init.enc_ppr = 2048;
 
 	h->testSig.clock_counter = 0;
 	h->testSig.prescale = 5000;
@@ -72,6 +75,7 @@ void MotorControl_Init(MotorControl_t *h)
 
 	h->encoder.enc_count = 0;
 	h->encoder.enc_count_prev = 0;
+	h->encoder.enc_integ_count = 0;
 	h->first_sample = 1;
 	h->encoder.enc_MAF_cursor = 0;
 	h->encoder.enc_diff_MAF_sum = 0;
@@ -94,10 +98,12 @@ void MotorControl_Init(MotorControl_t *h)
 	h->theta = 0;
 	h->cos_theta = 1;
 	h->sin_theta = 0;
-	h->omega_m = 0;
+	h->omega_rm = 0;
 	h->omega_re = 0;
+	h->theta_rm = 0;
 
 	h->omega_ref = 0;
+	h->theta_ref = 0;
 
 	h->tau_ref = 0;
 	h->phi_2d_ref = 0;
@@ -211,6 +217,7 @@ void MotorControl_Update(MotorControl_t *h)
 	case MODE_VECTOR_SLIP:
 		SensorBoard_Update(&h->sensor, h->sector);
 		MotorControl_Update_TestSig(h);
+		MotorControl_Update_APR(h);
 		MotorControl_Update_ASR(h);
 		MotorControl_Update_SlipVector(h);
 		MotorControl_Update_Vuvw(h);
@@ -232,6 +239,7 @@ static void MotorControl_Update_Encoder(MotorControl_t *h)
 		h->encoder.enc_diff = 0;
 		h->first_sample = 0;
 	}
+	h->encoder.enc_integ_count += h->encoder.enc_diff;
 	h->encoder.enc_diff_MAF_sum -= h->encoder.enc_diff_MAF_buf[h->encoder.enc_MAF_cursor];
 	h->encoder.enc_diff_MAF_sum += h->encoder.enc_diff;
 	h->encoder.enc_diff_MAF_buf[h->encoder.enc_MAF_cursor] = h->encoder.enc_diff;
@@ -240,8 +248,10 @@ static void MotorControl_Update_Encoder(MotorControl_t *h)
 	{
 		h->encoder.enc_MAF_cursor = 0;
 	}
-	h->omega_m = h->encoder.enc_diff_MAF_sum * 2 * M_PI / 8192 / h->init.Ts / ENC_MAF_SIZE;
-	h->omega_re = h->omega_m * h->param.Pn;
+	h->omega_rm = h->encoder.enc_diff_MAF_sum * 2 * M_PI / h->init.enc_ppr / 4 / h->init.Ts / ENC_MAF_SIZE;
+	h->omega_re = h->omega_rm * h->param.Pn;
+
+	h->theta_rm = h->encoder.enc_integ_count * 2 * M_PI / h->init.enc_ppr / 4;
 
 }
 
@@ -442,14 +452,19 @@ static void MotorControl_Init_ASR(MotorControl_t *h)
 static void MotorControl_Update_ASR(MotorControl_t *h)
 {
 
-	h->asr.omega_err = h->omega_ref - h->omega_m;
+	h->asr.omega_err = h->omega_ref - h->omega_rm;
 
 	h->asr.omega_err_integ += h->asr.omega_err * h->init.Ts;
 
-	h->tau_ref = -h->asr.Kp * h->omega_m + h->asr.Ki * h->asr.omega_err_integ;
+	h->tau_ref = -h->asr.Kp * h->omega_rm + h->asr.Ki * h->asr.omega_err_integ;
 
 }
 
+
+static void MotorControl_Update_APR(MotorControl_t *h)
+{
+	h->omega_ref = h->init.omega_apr * (h->theta_ref - h->theta_rm);
+}
 
 
 static void MotorControl_Update_SlipVector(MotorControl_t *h)
@@ -556,19 +571,47 @@ static void MotorControl_Update_TestSig(MotorControl_t *h)
 //			h->testSig.state_counter = 0;
 //		}
 
+//		switch(h->testSig.state_counter)
+//		{
+//		case 0:
+//			h->omega_ref = 0.0f;
+//			h->testSig.state_counter++;
+//			break;
+//		case 1:
+//			h->omega_ref = 188.5f;
+//			h->testSig.state_counter = 0;
+//			break;
+//		default:
+//			h->testSig.state_counter = 0;
+//		}
+
 		switch(h->testSig.state_counter)
 		{
 		case 0:
-			h->omega_ref = 0.0f;
+			h->theta_ref = 0.0f;
 			h->testSig.state_counter++;
 			break;
 		case 1:
-			h->omega_ref = 188.5f;
+			h->theta_ref = M_PI / 2;
+			h->testSig.state_counter++;
+			break;
+		case 2:
+			h->theta_ref = M_PI;
+			h->testSig.state_counter++;
+			break;
+		case 3:
+			h->theta_ref = M_PI * 3 / 2;
+			h->testSig.state_counter++;
+			break;
+		case 4:
+			h->theta_ref = M_PI * 2;
 			h->testSig.state_counter = 0;
 			break;
 		default:
 			h->testSig.state_counter = 0;
 		}
+
+
 
 	}
 

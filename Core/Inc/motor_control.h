@@ -31,8 +31,10 @@ typedef struct
 	int ct_cal_samples;
 	float Idq_lim;
 	float pwm_duty_lim;
+	float enc_ppr;
 	float omega_acr; // current regulator cutoff frequency [rad/s]
 	float omega_asr; // speed controller cutoff frequency [rad/s]
+	float omega_apr; // position controller cutoff frequency [rad/s]
 }MotorControl_Init_t;
 
 typedef struct
@@ -66,6 +68,7 @@ typedef struct
 {
 	uint16_t enc_count;
 	uint16_t enc_count_prev;
+	int32_t enc_integ_count;
 	int16_t enc_diff;
 	int32_t enc_diff_MAF_buf[ENC_MAF_SIZE];
 	int32_t enc_diff_MAF_sum;
@@ -98,8 +101,9 @@ typedef struct
 
 	MotorControl_Encoder_t encoder;
 
-	float omega_m;
+	float omega_rm;
 	float omega_re;
+	float theta_rm;
 
 	float ct_cal_Iu_sum;
 	float ct_cal_Iv_sum;
@@ -115,6 +119,7 @@ typedef struct
 	float cos_theta, sin_theta;
 
 	float omega_ref;
+	float theta_ref;
 
 	float tau_ref;
 	float phi_2d_ref;
