@@ -151,11 +151,13 @@ void MotorControl_Setup(MotorControl_t *h)
 //	h->mode = MODE_VF;
 //	h->vf_freq_ref = 8.33;
 
-
-
-	h->Id_ref = 0.3;
-	h->Iq_ref = 0.1;
+	h->phi_2d_ref = 0.5;
+	h->tau_ref = 0.0;
 	h->mode = MODE_VECTOR_SLIP;
+
+	HAL_Delay(1000);
+
+	h->tau_ref = 0.1;
 
 //	h->vf_freq_ref = 60;
 //	h->mode = MODE_PWM_TEST;
@@ -432,6 +434,8 @@ static void MotorControl_Update_SlipVector(MotorControl_t *h)
 	h->Id = h->cos_theta * Ia + h->sin_theta * Ib;
 	h->Iq = -h->sin_theta * Ia + h->cos_theta * Ib;
 
+	MotorControl_Update_CurrentCommand(h);
+
 	MotorControl_Update_ACR(h);
 
 	MotorControl_Update_SlipFreq(h);
@@ -459,6 +463,9 @@ static void MotorControl_Update_SlipVector(MotorControl_t *h)
 static void MotorControl_Update_CurrentCommand(MotorControl_t *h)
 {
 
+	h->Id_ref = h->phi_2d_ref / h->param.M;
+	h->Iq_ref = h->tau_ref * h->param.L2 / h->phi_2d_ref / h->param.M / h->param.Pn;
+
 }
 
 
@@ -481,8 +488,6 @@ static void MotorControl_Update_SlipFreq(MotorControl_t *h)
 	{
 		h->omega_s_ref = 0;
 	}
-
-
 
 }
 
