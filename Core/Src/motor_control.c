@@ -19,7 +19,8 @@ static float MotorControl_Get_SinTbl(MotorControl_t *h, float phase);
 static void MotorControl_Update_SlipVector(MotorControl_t *h);
 static void MotorControl_Update_CurrentCommand(MotorControl_t *h);
 static void MotorControl_Update_SlipFreq(MotorControl_t *h);
-
+static void MotorControl_Init_ASR(MotorControl_t *h);
+static void MotorControl_Update_ASR(MotorControl_t *h);
 static void MotorControl_Init_ACR(MotorControl_t *h);
 static void MotorControl_Update_ACR(MotorControl_t *h);
 static void MotorControl_Update_TestSig(MotorControl_t *h);
@@ -36,6 +37,7 @@ void MotorControl_Init(MotorControl_t *h)
 	h->param.L2 = 0.750701284;
 	h->param.M = 0.710517547;
 	h->param.sigma = 0.104191255;
+	h->param.Jm = 3.03E-4;
 
 	h->param.R2M_L2 = h->param.R2 * h->param.M / h->param.L2;
 	h->param.R2_L2 = h->param.R2 / h->param.L2;
@@ -50,10 +52,10 @@ void MotorControl_Init(MotorControl_t *h)
 	h->init.Idq_lim = 2;
 	h->init.pwm_duty_lim = 0.95;
 	h->init.omega_acr = 500;
-
+	h->init.omega_asr = 50;
 
 	h->testSig.clock_counter = 0;
-	h->testSig.prescale = 250;
+	h->testSig.prescale = 5000;
 	h->testSig.state_counter = 0;
 
 
@@ -95,6 +97,8 @@ void MotorControl_Init(MotorControl_t *h)
 	h->omega_m = 0;
 	h->omega_re = 0;
 
+	h->omega_ref = 0;
+
 	h->tau_ref = 0;
 	h->phi_2d_ref = 0;
 
@@ -104,6 +108,8 @@ void MotorControl_Init(MotorControl_t *h)
 	MotorControl_Set_SinTable(h);
 
 	MotorControl_Init_ACR(h);
+
+	MotorControl_Init_ASR(h);
 
 }
 
@@ -204,7 +210,8 @@ void MotorControl_Update(MotorControl_t *h)
 		break;
 	case MODE_VECTOR_SLIP:
 		SensorBoard_Update(&h->sensor, h->sector);
-//		MotorControl_Update_TestSig(h);
+		MotorControl_Update_TestSig(h);
+		MotorControl_Update_ASR(h);
 		MotorControl_Update_SlipVector(h);
 		MotorControl_Update_Vuvw(h);
 		break;
@@ -423,6 +430,28 @@ static void MotorControl_Update_ACR(MotorControl_t *h)
 }
 
 
+static void MotorControl_Init_ASR(MotorControl_t *h)
+{
+	h->asr.Kp = 2 * h->init.omega_asr * h->param.Jm;
+	h->asr.Ki = h->init.omega_asr * h->init.omega_asr * h->param.Jm;
+
+	h->asr.omega_err_integ = 0;
+}
+
+
+static void MotorControl_Update_ASR(MotorControl_t *h)
+{
+
+	h->asr.omega_err = h->omega_ref - h->omega_m;
+
+	h->asr.omega_err_integ += h->asr.omega_err * h->init.Ts;
+
+	h->tau_ref = -h->asr.Kp * h->omega_m + h->asr.Ki * h->asr.omega_err_integ;
+
+}
+
+
+
 static void MotorControl_Update_SlipVector(MotorControl_t *h)
 {
 	h->cos_theta = MotorControl_Get_SinTbl(h, h->theta + 1.570796326794897f);
@@ -501,26 +530,40 @@ static void MotorControl_Update_TestSig(MotorControl_t *h)
 	{
 		h->testSig.clock_counter = 0;
 
+//		switch(h->testSig.state_counter)
+//		{
+//		case 0:
+//			h->Id_ref = 0;
+//			h->Iq_ref = 0;
+//			h->testSig.state_counter++;
+//			break;
+//		case 1:
+//			h->Id_ref = 0.2;
+//			h->Iq_ref = 0;
+//			h->testSig.state_counter++;
+//			break;
+//		case 2:
+//			h->Id_ref = 0.2;
+//			h->Iq_ref = 0.2;
+//			h->testSig.state_counter++;
+//			break;
+//		case 3:
+//			h->Id_ref = 0;
+//			h->Iq_ref = 0.2;
+//			h->testSig.state_counter = 0;
+//			break;
+//		default:
+//			h->testSig.state_counter = 0;
+//		}
+
 		switch(h->testSig.state_counter)
 		{
 		case 0:
-			h->Id_ref = 0;
-			h->Iq_ref = 0;
+			h->omega_ref = 0.0f;
 			h->testSig.state_counter++;
 			break;
 		case 1:
-			h->Id_ref = 0.2;
-			h->Iq_ref = 0;
-			h->testSig.state_counter++;
-			break;
-		case 2:
-			h->Id_ref = 0.2;
-			h->Iq_ref = 0.2;
-			h->testSig.state_counter++;
-			break;
-		case 3:
-			h->Id_ref = 0;
-			h->Iq_ref = 0.2;
+			h->omega_ref = 188.5f;
 			h->testSig.state_counter = 0;
 			break;
 		default:

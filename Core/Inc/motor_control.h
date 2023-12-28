@@ -8,7 +8,7 @@
 #include "sensor_board.h"
 
 
-#define ENC_MAF_SIZE 32
+#define ENC_MAF_SIZE 8
 
 #define SIN_TBL_SIZE 1024
 #define SIN_TBL_MASK (SIN_TBL_SIZE-1)
@@ -32,6 +32,7 @@ typedef struct
 	float Idq_lim;
 	float pwm_duty_lim;
 	float omega_acr; // current regulator cutoff frequency [rad/s]
+	float omega_asr; // speed controller cutoff frequency [rad/s]
 }MotorControl_Init_t;
 
 typedef struct
@@ -42,6 +43,7 @@ typedef struct
 	float sigma;
 	float R2M_L2;
 	float R2_L2;
+	float Jm;
 }MotorControl_MotorParam_t;
 
 typedef struct
@@ -52,6 +54,13 @@ typedef struct
 	float Id_err_integ, Iq_err_integ;
 	float Vdq_lim;
 }MotorControl_ACR_t;
+
+typedef struct
+{
+	float Kp, Ki;
+	float omega_err;
+	float omega_err_integ;
+}MotorControl_ASR_t;
 
 typedef struct
 {
@@ -105,6 +114,8 @@ typedef struct
 	float theta;
 	float cos_theta, sin_theta;
 
+	float omega_ref;
+
 	float tau_ref;
 	float phi_2d_ref;
 	float phi_2d_est, phi_2q_est;
@@ -113,6 +124,7 @@ typedef struct
 	MotorControl_MotorParam_t param;
 
 	MotorControl_ACR_t acr;
+	MotorControl_ASR_t asr;
 
 	MotorControl_TestSignalGenerator_t testSig;
 
