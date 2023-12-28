@@ -16,7 +16,10 @@ static void MotorControl_Update_VF_Control(MotorControl_t *h);
 static int MotorControl_Update_Vuvw(MotorControl_t *h);
 static void MotorControl_Set_SinTable(MotorControl_t *h);
 static float MotorControl_Get_SinTbl(MotorControl_t *h, float phase);
-static void MotorControl_Update_FOC(MotorControl_t *h);
+static void MotorControl_Update_SlipVector(MotorControl_t *h);
+static void MotorControl_Update_CurrentCommand(MotorControl_t *h);
+static void MotorControl_Update_SlipFreq(MotorControl_t *h);
+
 static void MotorControl_Init_ACR(MotorControl_t *h);
 static void MotorControl_Update_ACR(MotorControl_t *h);
 static void MotorControl_Update_TestSig(MotorControl_t *h);
@@ -25,6 +28,7 @@ static void MotorControl_Update_PWM_Test(MotorControl_t *h);
 void MotorControl_Init(MotorControl_t *h)
 {
 
+	h->param.Pn = 2;
 	h->param.R1 = 17.95484109;
 	h->param.R2 = 29.45890479;
 	h->param.Rc = 11560.95715;
@@ -32,6 +36,9 @@ void MotorControl_Init(MotorControl_t *h)
 	h->param.L2 = 0.750701284;
 	h->param.M = 0.710517547;
 	h->param.sigma = 0.104191255;
+
+	h->param.R2M_L2 = h->param.R2 * h->param.M / h->param.L2;
+	h->param.R2_L2 = h->param.R2 / h->param.L2;
 
 
 //	h->init.V_f_rate = 200 / 60.0f;
@@ -85,6 +92,14 @@ void MotorControl_Init(MotorControl_t *h)
 	h->theta = 0;
 	h->cos_theta = 1;
 	h->sin_theta = 0;
+	h->omega_m = 0;
+	h->omega_re = 0;
+
+	h->tau_ref = 0;
+	h->phi_2d_ref = 0;
+
+	h->phi_2d_est = 0;
+	h->phi_2q_est = 0;
 
 	MotorControl_Set_SinTable(h);
 
@@ -138,9 +153,9 @@ void MotorControl_Setup(MotorControl_t *h)
 
 
 
-//	h->Id_ref = 0.1;
-//	h->Iq_ref = 0.2;
-	h->mode = MODE_FOC;
+	h->Id_ref = 0.3;
+	h->Iq_ref = 0.1;
+	h->mode = MODE_VECTOR_SLIP;
 
 //	h->vf_freq_ref = 60;
 //	h->mode = MODE_PWM_TEST;
@@ -185,10 +200,10 @@ void MotorControl_Update(MotorControl_t *h)
 		MotorControl_Update_VF_Control(h);
 		MotorControl_Update_Vuvw(h);
 		break;
-	case MODE_FOC:
+	case MODE_VECTOR_SLIP:
 		SensorBoard_Update(&h->sensor, h->sector);
-		MotorControl_Update_TestSig(h);
-		MotorControl_Update_FOC(h);
+//		MotorControl_Update_TestSig(h);
+		MotorControl_Update_SlipVector(h);
 		MotorControl_Update_Vuvw(h);
 		break;
 	}
@@ -217,6 +232,7 @@ static void MotorControl_Update_Encoder(MotorControl_t *h)
 		h->encoder.enc_MAF_cursor = 0;
 	}
 	h->omega_m = h->encoder.enc_diff_MAF_sum * 2 * M_PI / 8192 / h->init.Ts / ENC_MAF_SIZE;
+	h->omega_re = h->omega_m * h->param.Pn;
 
 }
 
@@ -405,7 +421,7 @@ static void MotorControl_Update_ACR(MotorControl_t *h)
 }
 
 
-static void MotorControl_Update_FOC(MotorControl_t *h)
+static void MotorControl_Update_SlipVector(MotorControl_t *h)
 {
 	h->cos_theta = MotorControl_Get_SinTbl(h, h->theta + 1.570796326794897f);
 	h->sin_theta = MotorControl_Get_SinTbl(h, h->theta);
@@ -418,13 +434,58 @@ static void MotorControl_Update_FOC(MotorControl_t *h)
 
 	MotorControl_Update_ACR(h);
 
+	MotorControl_Update_SlipFreq(h);
+
 	float Va_ref = h->cos_theta * h->Vd_ref - h->sin_theta * h->Vq_ref;
 	float Vb_ref = h->sin_theta * h->Vd_ref + h->cos_theta * h->Vq_ref;
 	h->Vu_ref = 0.816496580927726f * Va_ref; // sqrt(2/3)*Ia
 	h->Vv_ref = 0.816496580927726f * (-0.5 * Va_ref + 0.8660254037844386f * Vb_ref); // sqrt(2/3)*(-1/2*Ia + sqrt(3)/2*Ib)
 	h->Vw_ref = 0.816496580927726f * (-0.5 * Va_ref - 0.8660254037844386f * Vb_ref); // sqrt(2/3)*(-1/2*Ia - sqrt(3)/2*Ib)
 
+	// Update d-q coordinate
+	h->theta += (h->omega_s_ref + h->omega_re) * h->init.Ts;
+	if(h->theta >= 2 * M_PI)
+	{
+		h->theta -= 2 * M_PI;
+	}
+	else if(h->theta < 0)
+	{
+		h->theta += 2 * M_PI;
+	}
+
 }
+
+
+static void MotorControl_Update_CurrentCommand(MotorControl_t *h)
+{
+
+}
+
+
+static void MotorControl_Update_SlipFreq(MotorControl_t *h)
+{
+
+	// 2nd flux estimation
+	float p_phi_2d_est, p_phi_2q_est;
+	p_phi_2d_est = -h->param.R2_L2 * h->phi_2d_est + h->omega_s_ref * h->phi_2q_est + h->param.R2M_L2 * h->Id_ref;
+	p_phi_2q_est = -h->omega_s_ref * h->phi_2d_est - h->param.R2_L2 * h->phi_2q_est + h->param.R2M_L2 * h->Iq_ref;
+	h->phi_2d_est += p_phi_2d_est * h->init.Ts;
+	h->phi_2q_est += p_phi_2q_est * h->init.Ts;
+
+	// update slip frequency
+	if(h->phi_2d_est > 0.1f || h->phi_2d_est < -0.1f)
+	{
+		h->omega_s_ref = h->Iq_ref / h->phi_2d_est * h->param.R2M_L2;
+	}
+	else
+	{
+		h->omega_s_ref = 0;
+	}
+
+
+
+}
+
 
 
 static void MotorControl_Update_TestSig(MotorControl_t *h)

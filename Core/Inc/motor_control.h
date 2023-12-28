@@ -8,7 +8,7 @@
 #include "sensor_board.h"
 
 
-#define ENC_MAF_SIZE 1024
+#define ENC_MAF_SIZE 32
 
 #define SIN_TBL_SIZE 1024
 #define SIN_TBL_MASK (SIN_TBL_SIZE-1)
@@ -19,7 +19,7 @@ typedef enum
 	MODE_PWM_TEST,
 	MODE_V_UVW,
 	MODE_VF,
-	MODE_FOC,
+	MODE_VECTOR_SLIP,
 }MotorControl_Mode_e;
 
 
@@ -36,9 +36,12 @@ typedef struct
 
 typedef struct
 {
+	int Pn;
 	float R1, R2, Rc;
 	float L1, L2, M;
 	float sigma;
+	float R2M_L2;
+	float R2_L2;
 }MotorControl_MotorParam_t;
 
 typedef struct
@@ -87,6 +90,7 @@ typedef struct
 	MotorControl_Encoder_t encoder;
 
 	float omega_m;
+	float omega_re;
 
 	float ct_cal_Iu_sum;
 	float ct_cal_Iv_sum;
@@ -100,6 +104,11 @@ typedef struct
 	float Vd_ref, Vq_ref;
 	float theta;
 	float cos_theta, sin_theta;
+
+	float tau_ref;
+	float phi_2d_ref;
+	float phi_2d_est, phi_2q_est;
+	float omega_s_ref;
 
 	MotorControl_MotorParam_t param;
 
