@@ -126,6 +126,9 @@ typedef struct
 	float phi_2d_est, phi_2q_est;
 	float omega_s_ref;
 
+	float winding_theta_ref;
+	float winding_omega_max;
+
 	MotorControl_MotorParam_t param;
 
 	MotorControl_ACR_t acr;

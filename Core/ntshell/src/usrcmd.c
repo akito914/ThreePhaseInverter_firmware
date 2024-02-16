@@ -83,6 +83,7 @@ static int usrcmd_info(int argc, char **argv);
 static int usrcmd_test(int argc, char **argv);
 static int usrcmd_wavecap(int argc, char **argv);
 static int usrcmd_motor(int argc, char **argv);
+static int usrcmd_winding(int argc, char **argv);
 
 typedef struct {
     char *cmd;
@@ -97,6 +98,7 @@ static const cmd_table_t cmdlist[] = {
     { "test", "This is a description text string for info command.", usrcmd_test },
     { "wavecap", "This is a description text string for info command.", usrcmd_wavecap },
     { "motor", "This is a description text string for info command.", usrcmd_motor },
+    { "winding", "This is a description text string for info command.", usrcmd_winding },
 };
 #pragma GCC diagnostic warning "-Wwrite-strings"
 
@@ -672,6 +674,81 @@ static int usrcmd_motor(int argc, char **argv)
 }
 
 
+static int usrcmd_winding(int argc, char **argv)
+{
+	if (argc < 2)
+	{
+		uart_puts("winding turnset\r\n");
+		return -1;
+	}
+	if (ntlibc_strcmp(argv[1], "turnset") == 0)
+	{
+		char *endptr_f;
+		char *endptr_i;
+		int32_t turns = strtol(argv[2], &endptr_i, 10);
 
+		if(turns < 0)
+		{
+			uart_puts("ERROR\r\n");
+			return -1;
+		}
+
+
+		float theta_ref_start = motorControl.theta_ref;
+
+		motorControl.winding_theta_ref = theta_ref_start + 2 * M_PI * turns;
+
+		while(1)
+		{
+			HAL_Delay(20);
+
+			char c = ntshell_serial_getc_timeout(1);
+			if(c == 0x03)
+			{
+				puts("\r\n\r\n^C\r\n");
+				break;
+			}
+			else if(c == '1')
+			{
+				motorControl.winding_omega_max = 0;
+			}
+			else if(c == '2')
+			{
+				motorControl.winding_omega_max = 1;
+			}
+			else if(c == '3')
+			{
+				motorControl.winding_omega_max = 5;
+			}
+			else if(c == '4')
+			{
+				motorControl.winding_omega_max = 10;
+			}
+			else if(c == '5')
+			{
+				motorControl.winding_omega_max = 30;
+			}
+			else if(c == '6')
+			{
+				motorControl.winding_omega_max = 60;
+			}
+
+			float turn_count = (motorControl.theta_ref - theta_ref_start) / (2 * M_PI);
+
+			printf("turns_ref   = %d\r\n", turns);
+			printf("turn_count  = %.1f\r\n", turn_count);
+			printf("omega_max   = %.1f\r\n", motorControl.winding_omega_max);
+			printf("theta_ref = %.2f\r\n", motorControl.theta_ref);
+
+			uart_puts("\e[5A");
+		}
+
+		motorControl.winding_omega_max = 0;
+
+	}
+
+	return 0;
+
+}
 
 

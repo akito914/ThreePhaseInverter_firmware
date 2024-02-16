@@ -22,6 +22,7 @@ static void MotorControl_Update_SlipFreq(MotorControl_t *h);
 static void MotorControl_Init_ASR(MotorControl_t *h);
 static void MotorControl_Update_ASR(MotorControl_t *h);
 static void MotorControl_Update_APR(MotorControl_t *h);
+static void MotorControl_Update_Winding(MotorControl_t *h);
 static void MotorControl_Init_ACR(MotorControl_t *h);
 static void MotorControl_Update_ACR(MotorControl_t *h);
 static void MotorControl_Update_TestSig(MotorControl_t *h);
@@ -53,7 +54,7 @@ void MotorControl_Init(MotorControl_t *h)
 	h->init.Idq_lim = 2;
 	h->init.pwm_duty_lim = 0.95;
 	h->init.omega_acr = 1000;
-	h->init.omega_asr = 10;
+	h->init.omega_asr = 100;
 	h->init.omega_apr = 20;
 	h->init.enc_ppr = 2048;
 
@@ -110,6 +111,9 @@ void MotorControl_Init(MotorControl_t *h)
 
 	h->phi_2d_est = 0;
 	h->phi_2q_est = 0;
+
+	h->winding_theta_ref = 0.0f;
+	h->winding_omega_max = 0.0f;
 
 	MotorControl_Set_SinTable(h);
 
@@ -170,11 +174,11 @@ void MotorControl_Setup(MotorControl_t *h)
 	HAL_Delay(1000);
 
 	h->tau_ref = 0.0;
-	h->omega_ref = 100;
+//	h->omega_ref = 100;
+	h->theta_ref = 0.0f;
 
 //	h->vf_freq_ref = 60;
 //	h->mode = MODE_PWM_TEST;
-
 
 }
 
@@ -218,7 +222,8 @@ void MotorControl_Update(MotorControl_t *h)
 	case MODE_VECTOR_SLIP:
 		SensorBoard_Update(&h->sensor, h->sector);
 //		MotorControl_Update_TestSig(h);
-//		MotorControl_Update_APR(h);
+		MotorControl_Update_Winding(h);
+		MotorControl_Update_APR(h);
 		MotorControl_Update_ASR(h);
 		MotorControl_Update_SlipVector(h);
 		MotorControl_Update_Vuvw(h);
@@ -467,6 +472,19 @@ static void MotorControl_Update_APR(MotorControl_t *h)
 	h->omega_ref = h->init.omega_apr * (h->theta_ref - h->theta_rm);
 }
 
+
+static void MotorControl_Update_Winding(MotorControl_t *h)
+{
+	float winding_theta_err = h->winding_theta_ref - h->theta_ref;
+	if(winding_theta_err > 0)
+	{
+		h->theta_ref += h->winding_omega_max * h->init.Ts;
+	}
+	else if (winding_theta_err < 0)
+	{
+		h->theta_ref -= h->winding_omega_max * h->init.Ts;
+	}
+}
 
 static void MotorControl_Update_SlipVector(MotorControl_t *h)
 {
