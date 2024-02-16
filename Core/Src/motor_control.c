@@ -53,7 +53,7 @@ void MotorControl_Init(MotorControl_t *h)
 	h->init.Idq_lim = 2;
 	h->init.pwm_duty_lim = 0.95;
 	h->init.omega_acr = 1000;
-	h->init.omega_asr = 100;
+	h->init.omega_asr = 10;
 	h->init.omega_apr = 20;
 	h->init.enc_ppr = 2048;
 
@@ -169,7 +169,8 @@ void MotorControl_Setup(MotorControl_t *h)
 
 	HAL_Delay(1000);
 
-	h->tau_ref = 0.1;
+	h->tau_ref = 0.0;
+	h->omega_ref = 100;
 
 //	h->vf_freq_ref = 60;
 //	h->mode = MODE_PWM_TEST;
@@ -216,8 +217,8 @@ void MotorControl_Update(MotorControl_t *h)
 		break;
 	case MODE_VECTOR_SLIP:
 		SensorBoard_Update(&h->sensor, h->sector);
-		MotorControl_Update_TestSig(h);
-		MotorControl_Update_APR(h);
+//		MotorControl_Update_TestSig(h);
+//		MotorControl_Update_APR(h);
 		MotorControl_Update_ASR(h);
 		MotorControl_Update_SlipVector(h);
 		MotorControl_Update_Vuvw(h);
