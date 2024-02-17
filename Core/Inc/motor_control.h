@@ -50,6 +50,7 @@ typedef struct
 
 typedef struct
 {
+	int enable;
 	float Kp, Ki;
 	float Id_err, Iq_err;
 	float Vd_lim_err, Vq_lim_err;
@@ -59,6 +60,7 @@ typedef struct
 
 typedef struct
 {
+	int enable;
 	float Kp, Ki;
 	float omega_err;
 	float omega_err_integ;

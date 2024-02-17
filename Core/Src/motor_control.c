@@ -167,12 +167,14 @@ void MotorControl_Setup(MotorControl_t *h)
 //	h->mode = MODE_VF;
 //	h->vf_freq_ref = 8.33;
 
+	h->acr.enable = 1;
 	h->phi_2d_ref = 0.5;
 	h->tau_ref = 0.0;
 	h->mode = MODE_VECTOR_SLIP;
 
-	HAL_Delay(1000);
+	HAL_Delay(200);
 
+	h->asr.enable = 1;
 	h->tau_ref = 0.0;
 //	h->omega_ref = 100;
 	h->theta_ref = 0.0f;
@@ -398,6 +400,7 @@ static void MotorControl_Update_VF_Control(MotorControl_t *h)
 
 static void MotorControl_Init_ACR(MotorControl_t *h)
 {
+	h->acr.enable = 1;
 
 	h->acr.Kp = h->init.omega_acr * h->param.sigma * h->param.L1;
 	h->acr.Ki = h->init.omega_acr * (h->param.R1 + h->param.L1 / h->param.L2 * h->param.R2 * (1 - h->param.sigma));
@@ -412,6 +415,14 @@ static void MotorControl_Init_ACR(MotorControl_t *h)
 
 static void MotorControl_Update_ACR(MotorControl_t *h)
 {
+	if(h->acr.enable == 0)
+	{
+		h->Vd_ref = 0;
+		h->Vq_ref = 0;
+		h->acr.Vd_lim_err = 0;
+		h->acr.Vq_lim_err = 0;
+		return;
+	}
 
 	h->acr.Id_err = h->Id_ref - h->Id;
 	h->acr.Iq_err = h->Iq_ref - h->Iq;
@@ -448,6 +459,8 @@ static void MotorControl_Update_ACR(MotorControl_t *h)
 
 static void MotorControl_Init_ASR(MotorControl_t *h)
 {
+	h->asr.enable = 0;
+
 	h->asr.Kp = 2 * h->init.omega_asr * h->param.Jm;
 	h->asr.Ki = h->init.omega_asr * h->init.omega_asr * h->param.Jm;
 
@@ -457,13 +470,17 @@ static void MotorControl_Init_ASR(MotorControl_t *h)
 
 static void MotorControl_Update_ASR(MotorControl_t *h)
 {
+	if(h->asr.enable == 0)
+	{
+		h->tau_ref = 0;
+		return;
+	}
 
 	h->asr.omega_err = h->omega_ref - h->omega_rm;
 
 	h->asr.omega_err_integ += h->asr.omega_err * h->init.Ts;
 
 	h->tau_ref = -h->asr.Kp * h->omega_rm + h->asr.Ki * h->asr.omega_err_integ;
-
 }
 
 

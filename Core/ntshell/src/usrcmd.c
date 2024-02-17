@@ -687,11 +687,11 @@ static int usrcmd_winding(int argc, char **argv)
 		char *endptr_i;
 		int32_t turns = strtol(argv[2], &endptr_i, 10);
 
-		if(turns < 0)
-		{
-			uart_puts("ERROR\r\n");
-			return -1;
-		}
+//		if(turns < 0)
+//		{
+//			uart_puts("ERROR\r\n");
+//			return -1;
+//		}
 
 
 		float theta_ref_start = motorControl.theta_ref;
