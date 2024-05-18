@@ -666,6 +666,16 @@ static int usrcmd_motor(int argc, char **argv)
 		HAL_GPIO_WritePin(SD_GPIO_Port, SD_Pin, GPIO_PIN_SET);
 
 	}
+	else if(ntlibc_strcmp(argv[1], "set-tq") == 0)
+	{
+		char *endptr_f;
+		float tq_ref = strtof(argv[2], &endptr_f);
+
+		printf("\ntq_ref = %f  OK.\n\n", tq_ref);
+
+		motorControl.tau_ref = tq_ref;
+
+	}
 
 	return 0;
 

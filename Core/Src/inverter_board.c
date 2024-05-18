@@ -40,13 +40,19 @@ void InverterBoard_Init()
 }
 
 
+/*
+ * amp_u : -1.0 ~ +1.0
+ * amp_v : -1.0 ~ +1.0
+ * amp_w : -1.0 ~ +1.0
+ * amp_br:  0.0 ~ +1.0
+ */
 void InverterBoard_setPWM(float amp_u, float amp_v, float amp_w, float amp_br)
 {
 
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_3, htim8.Init.Period / 2 * (1 + amp_u));
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, htim8.Init.Period / 2 * (1 + amp_v));
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, htim8.Init.Period / 2 * (1 + amp_w));
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_4, htim8.Init.Period / 2 * (1 + amp_br));
+	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_4, htim8.Init.Period * amp_br);
 
 }
 

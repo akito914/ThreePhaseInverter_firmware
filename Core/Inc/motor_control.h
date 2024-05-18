@@ -88,7 +88,7 @@ typedef struct
 	SensorBoard_t sensor;
 
 	float Vu_ref, Vv_ref, Vw_ref;
-	float amp_u, amp_v, amp_w;
+	float amp_u, amp_v, amp_w, amp_br;
 	int sector;
 
 	float vf_phase;

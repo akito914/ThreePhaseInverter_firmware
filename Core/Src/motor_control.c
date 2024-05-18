@@ -219,7 +219,7 @@ void MotorControl_Update(MotorControl_t *h)
 		SensorBoard_Update(&h->sensor, h->sector);
 //		MotorControl_Update_TestSig(h);
 //		MotorControl_Update_APR(h);
-		MotorControl_Update_ASR(h);
+//		MotorControl_Update_ASR(h);
 		MotorControl_Update_SlipVector(h);
 		MotorControl_Update_Vuvw(h);
 		break;
@@ -259,6 +259,23 @@ static void MotorControl_Update_Encoder(MotorControl_t *h)
 
 static int MotorControl_Update_Vuvw(MotorControl_t *h)
 {
+	// Brake resister control
+	float Vdc_threshold = 150.0f;
+	float Vdc_upper_limit = 250.0f;
+	if(h->sensor.Vdc > Vdc_threshold)
+	{
+		h->amp_br = (h->sensor.Vdc - Vdc_threshold) / (Vdc_upper_limit - Vdc_threshold);
+		if(h->amp_br > 1.0f)
+		{
+			h->amp_br = 1.0f;
+		}
+	}
+	else
+	{
+		h->amp_br = 0.0f;
+	}
+
+
 	if(h->sensor.Vdc > 10.0f)
 	{
 		float v2amp = 2.0f / h->sensor.Vdc;
@@ -292,7 +309,7 @@ static int MotorControl_Update_Vuvw(MotorControl_t *h)
 		if(h->amp_v > 1) h->amp_v = 1;
 		if(h->amp_w < -1) h->amp_w = -1;
 		if(h->amp_w > 1) h->amp_w = 1;
-		InverterBoard_setPWM(h->amp_u, h->amp_v, h->amp_w, 0.0);
+		InverterBoard_setPWM(h->amp_u, h->amp_v, h->amp_w, h->amp_br);
 		return 0;
 	}
 	else
@@ -300,7 +317,7 @@ static int MotorControl_Update_Vuvw(MotorControl_t *h)
 		h->amp_u = 0.0;
 		h->amp_v = 0.0;
 		h->amp_w = 0.0;
-		InverterBoard_setPWM(h->amp_u, h->amp_v, h->amp_w, 0.0);
+		InverterBoard_setPWM(h->amp_u, h->amp_v, h->amp_w, h->amp_br);
 		return -1;
 	}
 
