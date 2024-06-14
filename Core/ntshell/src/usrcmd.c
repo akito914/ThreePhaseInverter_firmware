@@ -676,6 +676,16 @@ static int usrcmd_motor(int argc, char **argv)
 		motorControl.tau_ref = tq_ref;
 
 	}
+	else if(ntlibc_strcmp(argv[1], "set-spd") == 0)
+	{
+		char *endptr_f;
+		float Nrpm_ref = strtof(argv[2], &endptr_f);
+
+		printf("\nspd_ref = %f r/min OK.\n\n", Nrpm_ref);
+
+		motorControl.omega_ref = Nrpm_ref / 60.0f * 2 * M_PI;
+
+	}
 
 	return 0;
 
